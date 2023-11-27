@@ -68,7 +68,7 @@ CREATE SEQUENCE PkSequence.[UserAuthorizationSequenceObject]
  MAXVALUE 2147483647
 GO
 
--- for replacing identity key in Process.[WorkflowSteps]
+-- for replacing identity key in [Process].[WorkflowSteps]
 CREATE SEQUENCE PkSequence.[WorkFlowStepsSequenceObject] 
  AS [int]
  START WITH 1
@@ -139,7 +139,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE Process.[WorkflowSteps]
+CREATE TABLE [Process].[WorkflowSteps]
 (
     [WorkFlowStepKey] [int] NOT NULL,
     [WorkFlowStepDescription] [nvarchar](100) NOT NULL,
@@ -178,21 +178,6 @@ GO
 
 
 
------------------ Prepopulating the UserAuthorization Table with the Group Names -------------
-
-INSERT INTO [DbSecurity].[UserAuthorization]
-([GroupMemberLastName],[GroupMemberFirstName])
-VALUES
-
-        ('Georgievska','Aleksandra'),
-        ('Yakubova','Sigalita'),
-        ('Kong','Nicholas'),
-        ('Wray','Edwin'),
-        ('Ahmed','Ahnaf'),
-        ('Richman','Aryeh');
-GO
-
-
 --------------------- Alter Tables To Update Defaults/Constraints -------------------
 
 
@@ -201,7 +186,7 @@ ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT (NEXT VALUE FOR PkSequ
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('9:15') FOR [ClassTime]
 GO
-ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('PROJECT 2 RECREATE THE BICLASS DATABASE STAR SCHEMA') FOR [IndividualProject]
+ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('PROJECT 2.5  NORMALIZE PRESTIGE CARS SCHEMA') FOR [IndividualProject]
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('GROUP 1') FOR [GroupName]
 GO
@@ -218,7 +203,12 @@ GO
 ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT ('9:15') FOR [Class Time]
 GO
 
+
+
+
+
 -- add check constraints in the following format: 
+
 -- ALTER TABLE [CH01-01-Dimension].[DimCustomer]  WITH CHECK ADD  CONSTRAINT [FK_DimCustomer_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
 -- REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 -- GO
@@ -293,7 +283,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE OR ALTER PROCEDURE Process.[usp_ShowWorkflowSteps]
+CREATE OR ALTER PROCEDURE [Process].[usp_ShowWorkflowSteps]
 AS
 BEGIN
     -- SET NOCOUNT ON added to prevent extra result sets from
@@ -374,6 +364,58 @@ GO
 
 
 
+
+/*
+
+Stored Procedure: Process.[Load_UserAuthorization]
+
+Description: Prepopulating the UserAuthorization Table with the Group Names 
+
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/126/23
+-- Description:	Load the names & default values into the user authorization table
+-- =============================================
+*/
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_UserAuthorization]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [DbSecurity].[UserAuthorization]
+    ([GroupMemberLastName],[GroupMemberFirstName])
+    VALUES
+
+            ('Georgievska','Aleksandra'),
+            ('Yakubova','Sigalita'),
+            ('Kong','Nicholas'),
+            ('Wray','Edwin'),
+            ('Ahmed','Ahnaf'),
+            ('Richman','Aryeh');
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = 6;
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    EXEC Process.[usp_TrackWorkFlow] 'Add Users',
+                                       @WorkFlowStepTableRowCount,
+                                       @StartingDateTime,
+                                       @EndingDateTime,
+                                       @UserAuthorizationKey;
+END;
+GO
+
+
+
+
+
 /*
 Stored Procedure: [Project2.5].[AddForeignKeysToPrestigeCars]
 
@@ -417,7 +459,7 @@ BEGIN
     -- interfering with SELECT statements.
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    ALTER TABLE Process.[WorkflowSteps]
+    ALTER TABLE [Process].[WorkflowSteps]
     ADD CONSTRAINT FK_WorkFlowSteps_UserAuthorization
         FOREIGN KEY (UserAuthorizationKey)
         REFERENCES [DbSecurity].[UserAuthorization] (UserAuthorizationKey);
@@ -554,6 +596,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
+    ALTER SEQUENCE PkSequence.[UserAuthorizationSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [DbSecurity].[UserAuthorization]
+    ALTER SEQUENCE PkSequence.[WorkFlowStepsSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Process].[WorkFlowSteps]
     -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
     -- ALTER SEQUENCE PkSequence.DimCustomerSequenceObject RESTART WITH 1;
     -- TRUNCATE TABLE [CH01-01-Dimension].DimGender;
@@ -655,7 +701,7 @@ BEGIN
 
     SET @EndingDateTime = SYSDATETIME();
 
-    EXEC Process.[usp_TrackWorkFlow] 'Procedure: Project2.[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
+    EXEC Process.[usp_TrackWorkFlow] 'Procedure: Project2.5[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
@@ -691,6 +737,41 @@ GO
 
 -- do not add new stored procuedures after this space:
 
+/*
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/14/23
+-- Description:	Clears all data from the Prestige Cars db
+-- =============================================
+*/
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[TruncatePrestigeCarsDatabase]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    -- Drop All of the foreign keys prior to truncating tables in the Prestige Cars db
+    EXEC [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
+
+    --	Check row count before truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Pre-truncate of tables'''
+    
+    --	Always truncate the Star Schema Data
+    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
+
+    --	Check row count AFTER truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Post-truncate of tables'''
+END;
+GO
+
 
 /*
 This T-SQL script is for creating a stored procedure named LoadStarSchemaData within a SQL Server database, likely for the 
@@ -710,10 +791,6 @@ purpose of managing and updating a star schema data warehouse structure. Here's 
     
     * SET NOCOUNT ON;: This line stops the message that shows the number of rows affected by a T-SQL statement from being returned.
     * DECLARE @StartingDateTime DATETIME2: Declares a variable to store the starting time of the procedure execution.
-    * Dropping Foreign Keys: The procedure calls [Project2].[DropForeignKeysFromStarSchemaData] to drop foreign keys before truncating tables. 
-    This is necessary because you cannot truncate a table that has foreign keys referencing it.
-    * Checking Table Status: Executes [Project2].[ShowTableStatusRowCount] to report the row count of tables before truncation.
-    * Truncating Data: Executes [Project2].[TruncateStarSchemaData] to truncate the data in the star schema.
     * Loading Data: The procedure then loads data into various dimension tables (like product categories, subcategories, product, etc.) 
     and fact tables using multiple EXEC statements. Each EXEC statement calls a specific procedure to load data into a particular table.
     * Recreating Foreign Keys: After loading the data, it recreates the foreign keys using [Project2].[AddForeignKeysToStarSchemaData].
@@ -746,38 +823,30 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    --	Drop All of the foreign keys prior to truncating tables in the star schema
-    EXEC  [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
-    --
-    --	Check row count before truncation
-    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
-		@TableStatus = N'''Pre-truncate of tables'''
-    
-    --	Always truncate the Star Schema Data
-    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
-
-    --	Load the star schema
     /*
-                                            Note: User Authorization keys are hardcoded, each representing a different group user 
-                                                Aleksandra Georgievska → User Key 1
-                                                Sigalita Yakubova → User Key 2
-                                                Nicholas Kong → User Key 3
-                                                Edwin Wray → User Key 4
-                                                Ahnaf Ahmed → User Key 5
-                                                Aryeh Richman → User Key 6
-                                            */
+            Note: User Authorization keys are hardcoded, each representing a different group user 
+                    Aleksandra Georgievska → User Key 1
+                    Sigalita Yakubova → User Key 2
+                    Nicholas Kong → User Key 3
+                    Edwin Wray → User Key 4
+                    Ahnaf Ahmed → User Key 5
+                    Aryeh Richman → User Key 6
+    */
 
     -- ADD EXEC COMMANDS IN THE FOLLOWNG FORMAT:
-    -- EXEC  [Project2].[Load_Data] @UserAuthorizationKey = 2;                     -- Change to the appropriate UserAuthorizationKey
+    EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
 
-
-    
-    --	Recreate all of the foreign keys prior after loading the Prestige Cars schema
     --	Check row count before truncation
-    EXEC	[Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
-		@TableStatus = N'''Row Count after loading the star schema'''
-    --
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
+		@TableStatus = N'''Row Count after loading the Prestige Cars db'''
+
+    --	Recreate all of the foreign keys after loading the Prestige Cars schema
     EXEC [Project2.5].[AddForeignKeysToPrestigeCars] @UserAuthorizationKey = 1; -- Change to the appropriate UserAuthorizationKey
---
+
 END;
 GO
+
+
+-- EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
+-- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+-- EXEC [Process].[usp_ShowWorkflowSteps]

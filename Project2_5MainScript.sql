@@ -327,7 +327,35 @@ would want to query that information quickly for reporting purposes.
 
 
 
+------------------------- CREATE Table Valued Functions ---------------------------
 
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/23
+-- Description:	Input: StaffID
+--              Output: Table of that staff member's managerial hierarchy
+--                      (the staff member, boss, boss's boss, etc.)
+-- =============================================
+DROP FUNCTION IF EXISTS HumanResources.GetStaffHierarchy
+GO
+CREATE FUNCTION HumanResources.GetStaffHierarchy
+    (@id AS INT) RETURNS TABLE
+AS
+RETURN
+    WITH HierarchyCTE AS (
+        SELECT S.StaffID, S.StaffName, S.ManagerID
+        FROM HumanResources.Staff AS S
+        WHERE S.StaffID = @id
+    
+        UNION ALL
+    
+        SELECT E.StaffID, E.StaffName, E.ManagerID
+        FROM HierarchyCTE AS R 
+            INNER JOIN HumanResources.Staff AS E
+                ON R.ManagerID = E.StaffID
+    )
+    SELECT * FROM HierarchyCTE
+GO
 
 
 -------------- Create Stored Procedures --------------

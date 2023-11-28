@@ -112,6 +112,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+DROP TABLE IF EXISTS [DbSecurity].[UserAuthorization]
+GO
 CREATE TABLE [DbSecurity].[UserAuthorization]
 (
     [UserAuthorizationKey] [int] NOT NULL,
@@ -158,6 +160,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+DROP TABLE IF EXISTS [Process].[WorkflowSteps]
+GO
 CREATE TABLE [Process].[WorkflowSteps]
 (
     [WorkFlowStepKey] [int] NOT NULL,
@@ -165,6 +169,7 @@ CREATE TABLE [Process].[WorkflowSteps]
     [WorkFlowStepTableRowCount] [int] NULL,
     [StartingDateTime] [datetime2](7) NULL,
     [EndingDateTime] [datetime2](7) NULL,
+    [QueryTime (ms)] [bigint] NULL, 
     [Class Time] [char](5) NULL,
     [UserAuthorizationKey] [int] NOT NULL,
     PRIMARY KEY CLUSTERED 
@@ -179,8 +184,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
--- DROP TABLE IF EXISTS [HumanResources].[Staff]
--- GO
+DROP TABLE IF EXISTS [HumanResources].[Staff]
+GO
 CREATE TABLE [HumanResources].[Staff]
 (
     [StaffID] [int] NOT NULL,
@@ -201,8 +206,9 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
--- DROP TABLE IF EXISTS [HumanResources].[Departments]
--- GO
+
+DROP TABLE IF EXISTS [HumanResources].[Departments]
+GO
 CREATE TABLE [HumanResources].[Departments]
 (
     [DepartmentKey] [int] NOT NULL,
@@ -224,8 +230,7 @@ GO
 -- GO
 -- CREATE TABLE [SCHEMA_NAME].[TABLE_NAME]
 -- (
---     [UserAuthorizationKey] [int] NOT NULL,
---     ...add more columns here 
+--     ...add columns here 
 --     PRIMARY KEY CLUSTERED 
 -- (
 -- 	[UserAuthorizationKey] ASC
@@ -440,6 +445,7 @@ CREATE OR ALTER PROCEDURE [Process].[usp_TrackWorkFlow]
     @WorkFlowStepTableRowCount INT,
     @StartingDateTime DATETIME2,
     @EndingDateTime DATETIME2,
+    @QueryTime BIGINT,
     @UserAuthorizationKey INT
 AS
 BEGIN
@@ -454,11 +460,12 @@ BEGIN
         WorkFlowStepTableRowCount,
         StartingDateTime,
         EndingDateTime,
+        [QueryTime (ms)],
         [Class Time],
         UserAuthorizationKey
         )
     VALUES
-        (@WorkflowDescription, @WorkFlowStepTableRowCount, @StartingDateTime, @EndingDateTime, '9:15',
+        (@WorkflowDescription, @WorkFlowStepTableRowCount, @StartingDateTime, @EndingDateTime, @QueryTime, '9:15',
             @UserAuthorizationKey);
 
 END;
@@ -506,10 +513,12 @@ BEGIN
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 6;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow] 'Add Users',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
@@ -598,13 +607,17 @@ BEGIN
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow] 'Add Foreign Keys',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
+
+
 
 /*
 Stored Procedure: [Project2.5].[DropForeignKeysFromPrestigeCars]
@@ -664,13 +677,16 @@ BEGIN
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow] 'Drop Foreign Keys',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
+
 
 
 
@@ -739,14 +755,15 @@ BEGIN
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow] 'Truncate Data',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
-END
+END;
 GO
-
 
 
 
@@ -832,11 +849,12 @@ BEGIN
 
 
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
-
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow] 'Procedure: Project2.5[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
@@ -868,20 +886,22 @@ BEGIN
     SELECT DISTINCT COALESCE(Department, 'Executive') AS Department, @UserAuthorizationKey, @DateAdded
     FROM [PrestigeCars].[Reference].[Staff]
 
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
                                         FROM [HumanResources].Departments);
 
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow]
         'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Departments',
         @WorkFlowStepTableRowCount,
         @StartingDateTime,
         @EndingDateTime,
+        @QueryTime,
         @UserAuthorizationKey
-END
+END;
 GO
+
 
 
 -- Had to use an INNER JOIN to get the correct DepartmentID based on the staff member's department from the PrestigeCars Reference.Staff Table
@@ -915,20 +935,24 @@ BEGIN
             ON COALESCE(S.Department, 'Executive') = D.Department
     ORDER BY S.StaffID
 
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
                                         FROM [HumanResources].Departments);
 
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow]
         'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Staff',
         @WorkFlowStepTableRowCount,
         @StartingDateTime,
         @EndingDateTime,
+        @QueryTime,
         @UserAuthorizationKey
-END
+END;
 GO
+
+
 
 
 -- add new stored procedures in this space:

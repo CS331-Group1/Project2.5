@@ -733,6 +733,7 @@ BEGIN
     ALTER SEQUENCE PkSequence.[DepartmentsSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [HumanResources].[Departments];
 
+
     -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
     -- ALTER SEQUENCE PkSequence.DimCustomerSequenceObject RESTART WITH 1;
     -- TRUNCATE TABLE [CH01-01-Dimension].DimGender;

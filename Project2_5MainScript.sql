@@ -7,6 +7,7 @@ Step1: CREATE THE DATABASE
 Instructions: run only lines 10 and 11 using the master databse 
 
 */
+
 -- CREATE DATABASE [PrestigeCars_9:15_Group1];
 -- GO
 
@@ -77,11 +78,28 @@ CREATE SEQUENCE PkSequence.[WorkFlowStepsSequenceObject]
  MAXVALUE 2147483647
 GO
 
+-- for automatically assigning keys in [HumanResources].[Staff]
+-- We need to ensure that the 13 staff members from the PrestigeCars database maintain the same StaffIDs so that the ManagerIDs would be acurate
+-- Therefore we restart the sequence to start at 14 for future staff additions, since we already have the first 13 Staff members from the PrestigeCars database
+CREATE SEQUENCE PkSequence.[StaffSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+ALTER SEQUENCE PkSequence.[StaffSequenceObject]
+    RESTART WITH 14;
+-- for automatically assigning keys in [HumanResources].[Departments]
+CREATE SEQUENCE PkSequence.[DepartmentsSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
 -- add more sequences as needed
-
-
-
-
 
 
 ------------------------- CREATE TABLES ---------------------------
@@ -156,6 +174,46 @@ CREATE TABLE [Process].[WorkflowSteps]
 GO
 
 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- DROP TABLE IF EXISTS [HumanResources].[Staff]
+-- GO
+CREATE TABLE [HumanResources].[Staff]
+(
+    [StaffID] [int] NOT NULL,
+    [StaffName] [nvarchar](50) NOT NULL,
+    [ManagerID] [int] NULL,
+    [DepartmentKey] [int] NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[StaffID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- DROP TABLE IF EXISTS [HumanResources].[Departments]
+-- GO
+CREATE TABLE [HumanResources].[Departments]
+(
+    [DepartmentKey] [int] NOT NULL,
+    [Department] [nvarchar](50) NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[DepartmentKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 
 -- add more tables as needed following this format:
 
@@ -202,6 +260,11 @@ ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [EndingDate
 GO
 ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT ('9:15') FOR [Class Time]
 GO
+ALTER TABLE HumanResources.[Staff] ADD  DEFAULT (NEXT VALUE FOR PkSequence.[StaffSequenceObject]) FOR [StaffID]
+GO
+ALTER TABLE HumanResources.[Departments] ADD  DEFAULT (NEXT VALUE FOR PkSequence.[DepartmentsSequenceObject]) FOR [DepartmentKey]
+GO
+
 
 
 
@@ -220,6 +283,23 @@ ALTER TABLE Process.[WorkflowSteps]  WITH CHECK ADD  CONSTRAINT [FK_WorkFlowStep
 REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 GO
 ALTER TABLE Process.[WorkflowSteps] CHECK CONSTRAINT [FK_WorkFlowSteps_UserAuthorization]
+GO
+ALTER TABLE HumanResources.[Staff]  WITH CHECK ADD  CONSTRAINT [FK_Staff_Departments] FOREIGN KEY([DepartmentKey])
+REFERENCES [HumanResources].[Departments] ([DepartmentKey])
+GO
+ALTER TABLE HumanResources.[Staff] CHECK CONSTRAINT [FK_Staff_Departments]
+GO
+
+ALTER TABLE HumanResources.[Staff]  WITH CHECK ADD  CONSTRAINT [FK_Staff_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE HumanResources.[Staff] CHECK CONSTRAINT [FK_Staff_UserAuthorization]
+GO
+
+ALTER TABLE HumanResources.[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Departments_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE HumanResources.[Departments] CHECK CONSTRAINT [FK_Departments_UserAuthorization]
 GO
 
 -- add more here.. 
@@ -247,7 +327,35 @@ would want to query that information quickly for reporting purposes.
 
 
 
+------------------------- CREATE Table Valued Functions ---------------------------
 
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/23
+-- Description:	Input: StaffID
+--              Output: Table of that staff member's managerial hierarchy
+--                      (the staff member, boss, boss's boss, etc.)
+-- =============================================
+DROP FUNCTION IF EXISTS HumanResources.GetStaffHierarchy
+GO
+CREATE FUNCTION HumanResources.GetStaffHierarchy
+    (@id AS INT) RETURNS TABLE
+AS
+RETURN
+    WITH HierarchyCTE AS (
+        SELECT S.StaffID, S.StaffName, S.ManagerID
+        FROM HumanResources.Staff AS S
+        WHERE S.StaffID = @id
+    
+        UNION ALL
+    
+        SELECT E.StaffID, E.StaffName, E.ManagerID
+        FROM HierarchyCTE AS R 
+            INNER JOIN HumanResources.Staff AS E
+                ON R.ManagerID = E.StaffID
+    )
+    SELECT * FROM HierarchyCTE
+GO
 
 
 -------------- Create Stored Procedures --------------
@@ -463,6 +571,21 @@ BEGIN
     ADD CONSTRAINT FK_WorkFlowSteps_UserAuthorization
         FOREIGN KEY (UserAuthorizationKey)
         REFERENCES [DbSecurity].[UserAuthorization] (UserAuthorizationKey);
+    ALTER TABLE HumanResources.[Staff]
+    ADD CONSTRAINT FK_Staff_Departments 
+        FOREIGN KEY([DepartmentKey])
+        REFERENCES [HumanResources].[Departments] ([DepartmentKey]);
+    ALTER TABLE HumanResources.[Staff]
+    ADD CONSTRAINT FK_Staff_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+    ALTER TABLE HumanResources.[Departments]
+    ADD CONSTRAINT FK_Departments_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+
+
 
     -- ADD FOREIGN KEYS USEING THIS FORMAT:
     -- ALTER TABLE [SCHEMA_NAME].[TABLE]
@@ -537,6 +660,11 @@ BEGIN
 
 
     ALTER TABLE Process.[WorkflowSteps] DROP CONSTRAINT FK_WorkFlowSteps_UserAuthorization;
+    ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_Departments;
+    ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_UserAuthorization;
+    ALTER TABLE [HumanResources].[Departments] DROP CONSTRAINT FK_Departments_UserAuthorization;
+    
+    
     -- .. add more here!
 
     DECLARE @WorkFlowStepTableRowCount INT;
@@ -600,6 +728,12 @@ BEGIN
     TRUNCATE TABLE [DbSecurity].[UserAuthorization]
     ALTER SEQUENCE PkSequence.[WorkFlowStepsSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [Process].[WorkFlowSteps]
+    ALTER SEQUENCE PkSequence.[StaffSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [HumanResources].[Staff];
+    ALTER SEQUENCE PkSequence.[DepartmentsSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [HumanResources].[Departments];
+
+
     -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
     -- ALTER SEQUENCE PkSequence.DimCustomerSequenceObject RESTART WITH 1;
     -- TRUNCATE TABLE [CH01-01-Dimension].DimGender;
@@ -666,21 +800,13 @@ BEGIN
     -- SET NOCOUNT ON added to prevent extra result sets from
     -- interfering with SELECT statements.
     SET NOCOUNT ON;
-    DECLARE @DateAdded DATETIME2;
-    SET @DateAdded = SYSDATETIME();
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
 
-    DECLARE @DateOfLastUpdate DATETIME2;
-    SET @DateOfLastUpdate = SYSDATETIME();
+    DECLARE @DateOfLastUpdate DATETIME2 = SYSDATETIME();
 
-    DECLARE @StartingDateTime DATETIME2;
-    SET @StartingDateTime = SYSDATETIME();
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    DECLARE @EndingDateTime DATETIME2;
-
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = 0;
-
+    DECLARE @WorkFlowStepTableRowCount INT = 0;
 
     SELECT TableStatus = @TableStatus,
             TableName = '[DbSecurity].[UserAuthorization]',
@@ -691,6 +817,18 @@ BEGIN
             TableName = '[Process].[WorkflowSteps]',
             [Row Count] = COUNT(*)
         FROM Process.[WorkflowSteps];
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[HumanResources].[Departments]',
+            [Row Count] = COUNT(*)
+        FROM HumanResources.[Departments]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[HumanResources].[Staff]',
+            [Row Count] = COUNT(*)
+        FROM HumanResources.[Staff];
+
+
     -- ADD NEW TABLE STATUS ENTRIES IN THE FOLLOWING FORMAT:
     -- UNION ALL
         -- SELECT TableStatus = @TableStatus,
@@ -699,7 +837,7 @@ BEGIN
         -- FROM [].[]
 
 
-    SET @EndingDateTime = SYSDATETIME();
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
 
     EXEC Process.[usp_TrackWorkFlow] 'Procedure: Project2.5[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
                                        @WorkFlowStepTableRowCount,
@@ -710,14 +848,96 @@ END;
 GO
 
 
+-- Decided that there should be no NULL values for department i.e. every staff member should be part of a department
+-- So NULL values from the PrestigeCars database, i.e. the boss, is now in the Executive department using the COALESCE function
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/2023
+-- Description:	Load data into the Departments table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Departments]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [HumanResources].[Departments]
+        (Department, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT COALESCE(Department, 'Executive') AS Department, @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.Staff
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [HumanResources].Departments);
+
+    EXEC Process.[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Departments',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @UserAuthorizationKey
+END
+GO
 
 
+-- Had to use an INNER JOIN to get the correct DepartmentID based on the staff member's department from the PrestigeCars Reference.Staff Table
+-- Included the StaffID from the PrestigeCars database instead of the sequence object so that the ManagerIDs remain correct
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/2023
+-- Description:	Load data into the Staff table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Staff]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
 
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [HumanResources].[Staff]
+        (StaffID, StaffName, ManagerID, DepartmentKey, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT StaffID, StaffName, ManagerID,
+                    D.DepartmentKey,
+                    @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.Staff AS S
+        JOIN [HumanResources].[Departments] AS D
+            ON COALESCE(S.Department, 'Executive') = D.Department
+    ORDER BY S.StaffID
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [HumanResources].Departments);
+
+    EXEC Process.[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Staff',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @UserAuthorizationKey
+END
+GO
 
 
 -- add new stored procedures in this space:
-
 
 
 
@@ -835,6 +1055,8 @@ BEGIN
 
     -- ADD EXEC COMMANDS IN THE FOLLOWNG FORMAT:
     EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
+    EXEC [Project2.5].[Load_Departments] @UserAuthorizationKey = 6
+    EXEC [Project2.5].[Load_Staff] @UserAuthorizationKey = 6
 
     --	Check row count before truncation
     EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey

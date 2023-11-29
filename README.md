@@ -1,4 +1,8 @@
-# CSCI 331 Databases & Data Modeling with Professor Peter Heller
+# CSCI 331 Databases & Data Modeling
+
+CUNY Queens College
+Professor Peter Heller
+Fall 2023
 
 ## Project 2.5 Goal:
 
@@ -12,5 +16,3 @@ Recreate the Prestige Cars into a new “Normalized Database” called ‘Presti
 - Edwin Wray
 - Sigalita Yakubova
 - Ahnaf Ahmed
-
-Fall 2023

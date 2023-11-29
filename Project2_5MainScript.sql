@@ -155,7 +155,37 @@ CREATE SEQUENCE [PkSequence].[DelegationSequenceObject]
  MINVALUE 1
  MAXVALUE 2147483647
 GO
+
+--Nicholas
+-- for automatically assigning keys in [Production].[Make]
+CREATE SEQUENCE [PkSequence].[MakeSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+-- for automatically assigning keys in [Production].[Model]
+CREATE SEQUENCE [PkSequence].[ModelSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+-- for automatically assigning keys in [Production].[Stock]
+CREATE SEQUENCE [PkSequence].[StockSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
 -- add more sequences as needed
+
 
 
 ------------------------- CREATE TABLES ---------------------------
@@ -436,21 +466,77 @@ CREATE TABLE [Sales].[BudgetDelegations]
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
--- add more tables as needed following this format:
 
--- SET ANSI_NULLS ON
--- GO
--- SET QUOTED_IDENTIFIER ON
--- GO
--- CREATE TABLE [SCHEMA_NAME].[TABLE_NAME]
--- (
---     ...add columns here 
---     PRIMARY KEY CLUSTERED 
--- (
--- 	[UserAuthorizationKey] ASC
--- )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
--- ) ON [PRIMARY]
--- GO
+
+--Nicholas
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Make]
+GO
+CREATE TABLE [Production].[Make]
+(
+    [MakeName] NVARCHAR(100),
+	[MakeID] INT,
+	[UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[MakeID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+--Nicholas
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Model]
+GO
+CREATE TABLE [Production].[Model]
+(
+    [ModelName] NVARCHAR(150),
+	[ModelVariant] NVARCHAR(150),
+	[MakeID] INT,
+	[ModelID] INT,
+	[UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[ModelID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+--Nicholas
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Stock]
+GO
+CREATE TABLE [Production].[Stock]
+(
+    StockCode NVARCHAR(50),
+	Cost MONEY,
+	RepairsCost MONEY,
+    PartsCost MONEY,
+    TransportInCost MONEY,
+    Color NVARCHAR(50),
+    DateBought DATE,
+    TimeBought TIME,
+	[ModelID] INT,
+	StockID INT,
+	[UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[StockID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 
 
 
@@ -503,7 +589,13 @@ ALTER TABLE [Sales].[BudgetDelegations] ADD  DEFAULT (NEXT VALUE FOR [PkSequence
 GO
 
 
-
+--Nicholas
+ALTER TABLE [Production].[Make] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[MakeSequenceObject]) FOR [MakeID]
+GO
+ALTER TABLE [Production].[Model] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[ModelSequenceObject]) FOR [ModelID]
+GO
+ALTER TABLE [Production].[Stock] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[StockSequenceObject]) FOR [StockID]
+GO
 
 
 
@@ -603,7 +695,36 @@ ALTER TABLE [Sales].[SalesBudget] CHECK CONSTRAINT [FK_SalesBudget_UserAuthoriza
 GO
 
 
--- add more here.. 
+--Nicholas
+ALTER TABLE [Production].[Model]  WITH CHECK ADD  CONSTRAINT [FK_Model_Make] FOREIGN KEY([MakeID])
+REFERENCES [Production].[Make] ([MakeID])
+GO
+ALTER TABLE [Production].[Model] CHECK CONSTRAINT [FK_Model_Make];
+GO
+
+ALTER TABLE [Production].[Stock]  WITH CHECK ADD  CONSTRAINT [FK_Stock_Model] FOREIGN KEY([ModelID])
+REFERENCES [Production].[Model] ([ModelID])
+GO
+ALTER TABLE [Production].[Stock] CHECK CONSTRAINT [FK_Stock_Model];
+GO
+
+ALTER TABLE [Production].[Make] WITH CHECK ADD  CONSTRAINT [FK_Make_Authorization] FOREIGN KEY([AuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Production].[Make]  CHECK CONSTRAINT [FK_Make_Authorization] 
+GO
+
+ALTER TABLE [Production].[Model] WITH CHECK ADD  CONSTRAINT [FK_Model_Authorization] FOREIGN KEY([AuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Production].[Model]  CHECK CONSTRAINT [FK_Model_Authorization] 
+GO
+
+ALTER TABLE [Production].[Stock] WITH CHECK ADD  CONSTRAINT [FK_Stock_Authorization] FOREIGN KEY([AuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Production].[Stock]  CHECK CONSTRAINT [FK_Stock_Authorization] 
+GO
 
 
 
@@ -1085,7 +1206,27 @@ BEGIN
         FOREIGN KEY([UserAuthorizationKey])
         REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
 
-    -- ADD FOREIGN KEYS HERE:
+	--Nicholas
+	ALTER TABLE [Production].[Make]  
+	ADD CONSTRAINT FK_Make_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Model]  
+	ADD CONSTRAINT FK_Model_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Stock]  
+	ADD CONSTRAINT FK_Stock_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Model]
+	ADD CONSTRAINT FK_Model_Make
+		FOREIGN KEY ([MakeID])
+		REFERENCES [Production].[Make](MakeID);
+	ALTER TABLE [Production].[Stock]
+	ADD CONSTRAINT FK_Stock_Model
+		FOREIGN KEY ([ModelID])
+	REFERENCES [Production].[Model](ModelID);
 
 
 
@@ -1175,7 +1316,13 @@ BEGIN
     ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_Orders;
     ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_UserAuthorization;
     
-    -- .. add more here!
+    -- Nicholas 
+	ALTER TABLE [Production].[Model] DROP CONSTRAINT FK_Model_Make;
+	ALTER TABLE [Production].[Stock] DROP CONSTRAINT FK_Stock_Model;
+	ALTER TABLE [Production].[Make] DROP CONSTRAINT  FK_Make_UserAuthorization;
+	ALTER TABLE [Production].[Model] DROP CONSTRAINT FK_Model_UserAuthorization;
+	ALTER TABLE [Production].[Stock] DROP CONSTRAINT FK_Stock_UserAuthorization;
+
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
@@ -1268,7 +1415,13 @@ BEGIN
     TRUNCATE TABLE [Sales].[CountryBudget];
     TRUNCATE TABLE [Sales].[SalesBudget];
 
-    -- add truncate commands here
+	-- Nicholas
+	ALTER SEQUENCE [PkSequence].[MakeSequenceObject] RESTART WITH 1;
+	TRUNCATE TABLE [Production].[Make];
+	ALTER SEQUENCE [PkSequence].[ModelSequenceObject] RESTART WITH 1; 
+	TRUNCATE TABLE [Production].[Model];
+	ALTER SEQUENCE [PkSequence].[StockSequenceObject] RESTART WITH 1;
+	TRUNCATE TABLE [Production].[Stock];
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
@@ -1397,10 +1550,23 @@ BEGIN
         SELECT TableStatus = @TableStatus,
             TableName = '[Sales].[OrderDetails]',
             [Row Count] = COUNT(*)
-        FROM [Sales].[OrderDetails];
-
-
-    -- ADD NEW TABLE STATUS ENTRIES HERE:
+        FROM [Sales].[OrderDetails]
+	--Nicholas
+	UNION ALL
+	      SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Make]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Make]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Model]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Model]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Stock]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Stock];
 
 
 
@@ -1849,15 +2015,63 @@ BEGIN
 END;
 GO
 
--- add new stored procedures in this space:
 
+--============================================================
+-- Author: Nicholas Kong
+-- Create date: 11/28/2023
+-- Description: Extract from Source to Target for Production.Model & Normalize
+--============================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Model]
+	@UserAuthorizationKey INT
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
 
+	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
+	-- Extract Process
 
+    -- Insert distinct rows from the source table
+    -- Use ISNULL to handle null values in the ModelID column
+    -- Coalesce resolves the rows displaying null values
+    -- Nullif '' resolves the rows displaying empty string
+    INSERT INTO [Production].[Model](ModelName, ModelVariant, MakeID,ModelID, UserAuthorizationKey,DateAdded)
+    SELECT DISTINCT
+        COALESCE(NULLIF(ModelName, ''), 'Not Specified') AS ModelName,
+        COALESCE(NULLIF(ModelVariant, ''), 'Not Specified') AS ModelVariant,
+		M.MakeID,
+		M.ModelID, 
+		@UserAuthorizationKey,
+		@DateAdded
+    FROM PrestigeCars.Data.Model AS M
+	JOIN [PrestigeCars].[Data].[Stock] AS S
+		ON M.ModelID = S.ModelID
+	Order By M.ModelID
 
+	DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Production].Model);
 
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
 
+	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Make] loads data into [Production].Make',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+
+END;
+GO
 
 
 
@@ -1983,6 +2197,9 @@ BEGIN
     EXEC [Project2.5].[LoadColorBudget] @UserAuthorizationKey = 2
     EXEC [Project2.5].[LoadCountryBudget] @UserAuthorizationKey = 2    
     EXEC [Project2.5].[LoadSalesBudget] @UserAuthorizationKey = 2  
+
+    -- Nicholas
+    EXEC [Project2.5].[Load_Model] @UserAuthorizationKey = 3
 
 
     --	Check row count before truncation

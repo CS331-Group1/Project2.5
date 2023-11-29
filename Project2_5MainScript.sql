@@ -729,162 +729,6 @@ GO
 
 
 
-------------------------- CREATE VIEWS ---------------------------
-/*
-
-These views preserve some tables from the original Prestige Cars database. 
-The original tables had various issues (ex: some were determined to be 
-redundant) and so were broken into new tables in order to adhere to 
-normalization techniques. 
-Some original tables were preserved in Views since it's clear the business
-would want to query that information quickly for reporting purposes.
-
-*/
-
-
-
-
-
--- Stored Procedure for creating views
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Ahnaf Ahmed
--- Create date: 11/29/2023
--- Description:	Creates views for PrestigeCars database
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[Create_Views]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-	SET NOCOUNT ON;
-
-	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-	-- uvw_[Sales].[OrdersByYear]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByYear]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByYear]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,C.[CustomerName]
-        ,C.[Country]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,OD.[SalesPrice]
-        ,O.[OrderDate]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[Orders]ByCountry]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCountry]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCountry]
-    AS
-
-    SELECT C.[Country]
-        ,MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,S.[Color]
-        ,OD.[SalesPrice]
-        ,OD.[LineItemDiscount]
-        ,O.[InvoiceNumber]
-        ,C.[CustomerName]
-        ,OD.[OrderDetailsID]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[OrdersByCurrency]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCurrency]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCurrency]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,[$] + S.[Cost] AS [VehicleCostInUSD]
-        ,[￡] + (S.[Cost] * 0.79) [VehicleCostInGBP]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_StockPrices]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_StockPrices]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_StockPrices]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-    FROM [Production].[Stock] AS S
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-    -- G9_1.[uvw_Pivot]
-    EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_Pivot]')
-
-    EXEC ('CREATE VIEW [G9_1].[uvw_Pivot]
-    AS
-
-    SELECT P.ProductName
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2015 THEN OD.[SalesPrice] END) AS [2015]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2016 THEN OD.[SalesPrice] END) AS [2016]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2017 THEN OD.[SalesPrice] END) AS [2017]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2018 THEN OD.[SalesPrice] END) AS [2018]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    GROUP BY S.[Color]')
-
-
-	DECLARE @WorkFlowStepTableRowCount INT = 0;
-
-	DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS BIGINT);
-
-	EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[Create_Views] creates [G9_1].[uvw_OrdersByYear], [G9_1].[uvw_OrdersByCountry], [G9_1].[uvw_OrdersByCurrency], [G9_1].[uvw_StockPrices], and [G9_1].[uvw_Pivot] views for the PrestigeCars database'
-		,@WorkFlowStepTableRowCount
-		,@StartingDateTime
-		,@EndingDateTime
-		,@QueryTime
-		,@UserAuthorizationKey
-END;
-GO
-
-
-
-
-
-
 ------------------------- CREATE Table Valued Functions ---------------------------
 
 -- =============================================
@@ -2073,164 +1917,7 @@ BEGIN
 END;
 GO
 
-
-
-
-
-
-
-
--- don't add new stored procuedures after this space:
-
-/*
--- =============================================
--- Author:		Aleksandra Georgievska
--- Create date: 11/14/23
--- Description:	Clears all data from the Prestige Cars db
--- =============================================
-*/
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE OR ALTER PROCEDURE [Project2.5].[TruncatePrestigeCarsDatabase]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    -- Drop All of the foreign keys prior to truncating tables in the Prestige Cars db
-    EXEC [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
-
-    --	Check row count before truncation
-    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
-		@TableStatus = N'''Pre-truncate of tables'''
-    
-    --	Always truncate the Star Schema Data
-    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
-
-    --	Check row count AFTER truncation
-    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
-		@TableStatus = N'''Post-truncate of tables'''
-END;
-GO
-
-
-/*
-This T-SQL script is for creating a stored procedure named LoadStarSchemaData within a SQL Server database, likely for the 
-purpose of managing and updating a star schema data warehouse structure. Here's a breakdown of what this script does:
-
- 1. Setting Options:
-    
-    * SET ANSI_NULLS ON: Ensures that the session treats NULL values according to the ANSI SQL standard.
-    * SET QUOTED_IDENTIFIER ON: Allows the use of double quotes to delimit identifiers.
-
- 2. Creating the Stored Procedure:
-    
-    * CREATE PROCEDURE [Project2].[LoadStarSchemaData]: This line starts the creation of a stored procedure named LoadStarSchemaData 
-    under the schema Project2. It takes an @UserAuthorizationKey as an integer parameter.
-
- 3. Procedure Body:
-    
-    * SET NOCOUNT ON;: This line stops the message that shows the number of rows affected by a T-SQL statement from being returned.
-    * DECLARE @StartingDateTime DATETIME2: Declares a variable to store the starting time of the procedure execution.
-    * Loading Data: The procedure then loads data into various dimension tables (like product categories, subcategories, product, etc.) 
-    and fact tables using multiple EXEC statements. Each EXEC statement calls a specific procedure to load data into a particular table.
-    * Recreating Foreign Keys: After loading the data, it recreates the foreign keys using [Project2].[AddForeignKeysToStarSchemaData].
-    * Final Steps: It checks the row count again after loading the data, sets an @EndingDateTime variable, and then calls [Process].[usp_TrackWorkFlow] 
-    to track the workflow, passing in various parameters including the start and end times.
-
- 4. End of Procedure: The script ends with END; to signify the end of the stored procedure and GO to signal the end of a batch of 
- Transact-SQL statements to the SQL Server.
-
-In summary, this stored procedure is designed to manage the updating of a star schema database by first dropping foreign keys, 
-truncating existing data, loading new data into the dimensional and fact tables, recreating the foreign keys, and logging the 
-workflow process. The use of @UserAuthorizationKey in various places suggests that the procedure includes some form of authorization 
-or tracking mechanism based on the user executing the procedure.
-
--- =============================================
--- Author:		Aleksandra Georgievska
--- Create date: 11/14/23
--- Description:	Procedure runs other stored procedures to populate the data
--- =============================================
-*/
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadPrestigeCarsDatabase]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    /*
-            Note: User Authorization keys are hardcoded, each representing a different group user 
-                    Aleksandra Georgievska → User Key 1
-                    Sigalita Yakubova → User Key 2
-                    Nicholas Kong → User Key 3
-                    Edwin Wray → User Key 4
-                    Ahnaf Ahmed → User Key 5
-                    Aryeh Richman → User Key 6
-    */
-
-    -- ADD EXEC COMMANDS IN THE FOLLOWNG FORMAT:
-    EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
-    EXEC [Project2.5].[Load_Departments] @UserAuthorizationKey = 6
-    EXEC [Project2.5].[Load_Staff] @UserAuthorizationKey = 6
-
-    -- Edwin
-    EXEC [Project2.5].[Load_Customers] @UserAuthorizationKey = 4
-    EXEC [Project2.5].[Load_Orders] @UserAuthorizationKey = 4
-    EXEC [Project2.5].[Load_OrderDetails] @UserAuthorizationKey = 4
-
-    -- Ahnaf
-    EXEC [Project2.5].[Create_Views] @UserAuthorizationKey = 5
-
-    -- Sigi
-    EXEC [Project2.5].[LoadMakeMarketing] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadBudgetDelegations] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadColorBudget] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadCountryBudget] @UserAuthorizationKey = 2    
-    EXEC [Project2.5].[LoadSalesBudget] @UserAuthorizationKey = 2  
-
-    -- Nicholas
-    EXEC [Project2.5].[Load_Model] @UserAuthorizationKey = 3
-
-
-    --	Check row count before truncation
-    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
-		@TableStatus = N'''Row Count after loading the Prestige Cars db'''
-
-    --	Recreate all of the foreign keys after loading the Prestige Cars schema
-    EXEC [Project2.5].[AddForeignKeysToPrestigeCars] @UserAuthorizationKey = 1; -- Change to the appropriate UserAuthorizationKey
-
-END;
-GO
-
------------------ EXEC COMMANDS TO MANAGE THE DB -----------------------
-
--- run the following command to load the database
--- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
-
--- run the following 2 exec commands to CLEAR and load the database 
--- EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
--- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
-
--- run the following to show the workflow steps table 
--- EXEC [Process].[usp_ShowWorkflowSteps]
-
-
-
-
 ------------------------- CREATE VIEWS ---------------------------
-
--- The module 'Create_Views' depends on the missing object 'Process.usp_TrackWorkFlow'. 
--- so this code block was moved to the end of the script after the db has been created
 /*
 
 These views preserve some tables from the original Prestige Cars database. 
@@ -2382,3 +2069,147 @@ END;
 GO
 
 
+
+
+
+/*
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/14/23
+-- Description:	Clears all data from the Prestige Cars db
+-- =============================================
+*/
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[TruncatePrestigeCarsDatabase]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    -- Drop All of the foreign keys prior to truncating tables in the Prestige Cars db
+    EXEC [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
+
+    --	Check row count before truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Pre-truncate of tables'''
+    
+    --	Always truncate the Star Schema Data
+    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
+
+    --	Check row count AFTER truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Post-truncate of tables'''
+END;
+GO
+
+
+/*
+This T-SQL script is for creating a stored procedure named LoadStarSchemaData within a SQL Server database, likely for the 
+purpose of managing and updating a star schema data warehouse structure. Here's a breakdown of what this script does:
+
+ 1. Setting Options:
+    
+    * SET ANSI_NULLS ON: Ensures that the session treats NULL values according to the ANSI SQL standard.
+    * SET QUOTED_IDENTIFIER ON: Allows the use of double quotes to delimit identifiers.
+
+ 2. Creating the Stored Procedure:
+    
+    * CREATE PROCEDURE [Project2].[LoadStarSchemaData]: This line starts the creation of a stored procedure named LoadStarSchemaData 
+    under the schema Project2. It takes an @UserAuthorizationKey as an integer parameter.
+
+ 3. Procedure Body:
+    
+    * SET NOCOUNT ON;: This line stops the message that shows the number of rows affected by a T-SQL statement from being returned.
+    * DECLARE @StartingDateTime DATETIME2: Declares a variable to store the starting time of the procedure execution.
+    * Loading Data: The procedure then loads data into various dimension tables (like product categories, subcategories, product, etc.) 
+    and fact tables using multiple EXEC statements. Each EXEC statement calls a specific procedure to load data into a particular table.
+    * Recreating Foreign Keys: After loading the data, it recreates the foreign keys using [Project2].[AddForeignKeysToStarSchemaData].
+    * Final Steps: It checks the row count again after loading the data, sets an @EndingDateTime variable, and then calls [Process].[usp_TrackWorkFlow] 
+    to track the workflow, passing in various parameters including the start and end times.
+
+ 4. End of Procedure: The script ends with END; to signify the end of the stored procedure and GO to signal the end of a batch of 
+ Transact-SQL statements to the SQL Server.
+
+In summary, this stored procedure is designed to manage the updating of a star schema database by first dropping foreign keys, 
+truncating existing data, loading new data into the dimensional and fact tables, recreating the foreign keys, and logging the 
+workflow process. The use of @UserAuthorizationKey in various places suggests that the procedure includes some form of authorization 
+or tracking mechanism based on the user executing the procedure.
+
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/14/23
+-- Description:	Procedure runs other stored procedures to populate the data
+-- =============================================
+*/
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadPrestigeCarsDatabase]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    /*
+            Note: User Authorization keys are hardcoded, each representing a different group user 
+                    Aleksandra Georgievska → User Key 1
+                    Sigalita Yakubova → User Key 2
+                    Nicholas Kong → User Key 3
+                    Edwin Wray → User Key 4
+                    Ahnaf Ahmed → User Key 5
+                    Aryeh Richman → User Key 6
+    */
+
+    -- ADD EXEC COMMANDS IN THE FOLLOWNG FORMAT:
+    EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
+    EXEC [Project2.5].[Load_Departments] @UserAuthorizationKey = 6
+    EXEC [Project2.5].[Load_Staff] @UserAuthorizationKey = 6
+
+    -- Edwin
+    EXEC [Project2.5].[Load_Customers] @UserAuthorizationKey = 4
+    EXEC [Project2.5].[Load_Orders] @UserAuthorizationKey = 4
+    EXEC [Project2.5].[Load_OrderDetails] @UserAuthorizationKey = 4
+
+    -- Ahnaf
+    EXEC [Project2.5].[Create_Views] @UserAuthorizationKey = 5
+
+    -- Sigi
+    EXEC [Project2.5].[LoadMakeMarketing] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadBudgetDelegations] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadColorBudget] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadCountryBudget] @UserAuthorizationKey = 2    
+    EXEC [Project2.5].[LoadSalesBudget] @UserAuthorizationKey = 2  
+
+    -- Nicholas
+    EXEC [Project2.5].[Load_Model] @UserAuthorizationKey = 3
+
+
+    --	Check row count before truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
+		@TableStatus = N'''Row Count after loading the Prestige Cars db'''
+
+    --	Recreate all of the foreign keys after loading the Prestige Cars schema
+    EXEC [Project2.5].[AddForeignKeysToPrestigeCars] @UserAuthorizationKey = 1; -- Change to the appropriate UserAuthorizationKey
+
+END;
+GO
+
+----------------- EXEC COMMANDS TO MANAGE THE DB -----------------------
+
+-- run the following command to load the database
+EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+
+-- run the following 2 exec commands to CLEAR and load the database 
+-- EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
+-- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+
+-- run the following to show the workflow steps table 
+EXEC [Process].[usp_ShowWorkflowSteps]

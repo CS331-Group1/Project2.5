@@ -261,7 +261,8 @@ CREATE TABLE [Sales].[Customers]
 (
     [CustomerID] [int] NOT NULL,
     [CustomerName] [nvarchar](150) NULL,
-    [Address] [nvarchar](50) NULL,
+    [Address1] [nvarchar](50) NULL,
+    [Address2] [nvarchar](50) NULL,
     [Town] [nvarchar](50) NULL,
     [Country] [nvarchar](50) NULL,
     [PostCode] [nvarchar](50) NULL,
@@ -1179,15 +1180,11 @@ BEGIN
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
     INSERT INTO [Sales].[Customers]
-        (CustomerID, CustomerName, [Address], Town, Country, PostCode 
+        (CustomerID, CustomerName, [Address1], [Address2], Town, Country, PostCode 
             , SpendCapacity, IsReseller, IsCreditRisk, UserAuthorizationKey, DateAdded)
-    SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName
-                        , CASE
-                            WHEN C.Address2 IS NOT NULL THEN CONCAT(C.Address1, ', ', C.Address2)
-                            ELSE C.Address1
-                        END AS [Address]
+    SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName, C.Address1, C.Address2
                         , Town, C.Country, C.PostCode, M.SpendCapacity, C.IsReseller, C.IsCreditRisk
-                    , @UserAuthorizationKey, @DateAdded
+                        , @UserAuthorizationKey, @DateAdded
     FROM [PrestigeCars].[Data].[Customer] AS C
         LEFT JOIN [PrestigeCars].[Reference].[MarketingInformation] AS M
             ON C.CustomerName = M.CUST AND C.Country = M.Country

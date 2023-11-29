@@ -100,6 +100,34 @@ CREATE SEQUENCE [PkSequence].[DepartmentsSequenceObject]
  MAXVALUE 2147483647
 GO
 
+-- Edwin
+-- for automatically assigning keys in [Sales].[Customers]
+CREATE SEQUENCE [PkSequence].[CustomersSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+-- for automatically assigning keys in [Sales].[Orders]
+CREATE SEQUENCE [PkSequence].[OrdersSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+-- for automatically assigning keys in [Sales].[OrderDetails]
+CREATE SEQUENCE [PkSequence].[OrderDetailsSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
 -- add more sequences as needed
 
 
@@ -222,6 +250,79 @@ CREATE TABLE [HumanResources].[Departments]
 ) ON [PRIMARY]
 GO
 
+-- Edwin
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Sales].[Customers]
+GO
+CREATE TABLE [Sales].[Customers]
+(
+    [CustomerID] [int] NOT NULL,
+    [CustomerName] [nvarchar](150) NULL,
+    [Address] [nvarchar](50) NULL,
+    [Town] [nvarchar](50) NULL,
+    [Country] [nvarchar](50) NULL,
+    [PostCode] [nvarchar](50) NULL,
+    [SpendCapacity] [nvarchar](25) NULL,
+    [IsReseller] [bit] NULL,
+    [IsCreditRisk] [bit] NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[CustomerID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Sales].[Orders]
+GO
+CREATE TABLE [Sales].[Orders]
+(
+    [OrderID] [int] NOT NULL,
+    [CustomerID] [int] NOT NULL,
+    [OrderDate] [datetime] NULL,
+    [InvoiceNumber] [char](8) NULL,
+    [TotalSalePrice] [numeric](18,2) NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[OrderID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Sales].[OrderDetails]
+GO
+CREATE TABLE [Sales].[OrderDetails]
+(
+    [OrderDetailsID] [int] NOT NULL,
+    [OrderID] [int] NOT NULL,
+    [CustomerID] [int] NOT NULL,
+    [LineItemNumber] [tinyint] NULL,
+    [StockID] [nvarchar](50) NULL,
+    [SalesPrice] [numeric](18,2) NULL,
+    [LineItemDiscount] [numeric](18,2) NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[OrderDetailsID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
 -- add more tables as needed following this format:
 
 -- SET ANSI_NULLS ON
@@ -271,6 +372,13 @@ GO
 ALTER TABLE [HumanResources].[Departments] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[DepartmentsSequenceObject]) FOR [DepartmentKey]
 GO
 
+-- Edwin
+ALTER TABLE [Sales].[Customers] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[CustomersSequenceObject]) FOR [CustomerID]
+GO
+ALTER TABLE [Sales].[Orders] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[OrdersSequenceObject]) FOR [OrderID]
+GO
+ALTER TABLE [Sales].[OrderDetails] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[OrderDetailsSequenceObject]) FOR [OrderDetailsID]
+GO
 
 
 
@@ -299,6 +407,43 @@ ALTER TABLE [HumanResources].[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Depar
 REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 GO
 ALTER TABLE [HumanResources].[Departments] CHECK CONSTRAINT [FK_Departments_UserAuthorization]
+GO
+
+-- Edwin
+ALTER TABLE [Sales].[Customers]  WITH CHECK ADD  CONSTRAINT [FK_Customers_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[Customers] CHECK CONSTRAINT [FK_Customers_UserAuthorization]
+GO
+
+ALTER TABLE [Sales].[Orders]  WITH CHECK ADD  CONSTRAINT [FK_Orders_Customers] FOREIGN KEY([CustomerID])
+REFERENCES [Sales].[Customers] ([CustomerID])
+GO
+ALTER TABLE [Sales].[Orders] CHECK CONSTRAINT [FK_Orders_Customers]
+GO
+
+ALTER TABLE [Sales].[Orders]  WITH CHECK ADD  CONSTRAINT [FK_Orders_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[Orders] CHECK CONSTRAINT [FK_Orders_UserAuthorization]
+GO
+
+ALTER TABLE [Sales].[OrderDetails]  WITH CHECK ADD  CONSTRAINT [FK_OrderDetails_Orders] FOREIGN KEY([OrderID])
+REFERENCES [Sales].[Orders] ([OrderID])
+GO
+ALTER TABLE [Sales].[OrderDetails] CHECK CONSTRAINT [FK_OrderDetails_Orders]
+GO
+
+ALTER TABLE [Sales].[OrderDetails]  WITH CHECK ADD  CONSTRAINT [FK_OrderDetails_Customers] FOREIGN KEY([CustomerID])
+REFERENCES [Sales].[Customers] ([CustomerID])
+GO
+ALTER TABLE [Sales].[OrderDetails] CHECK CONSTRAINT [FK_OrderDetails_Customers]
+GO
+
+ALTER TABLE [Sales].[OrderDetails]  WITH CHECK ADD  CONSTRAINT [FK_OrderDetails_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[OrderDetails] CHECK CONSTRAINT [FK_OrderDetails_UserAuthorization]
 GO
 
 -- add more here.. 
@@ -587,6 +732,32 @@ BEGIN
         FOREIGN KEY([UserAuthorizationKey])
         REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
 
+    -- Edwin
+    ALTER TABLE [Sales].[Customers]
+    ADD CONSTRAINT FK_Customers_UserAuthorization
+        FOREIGN KEY ([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+    ALTER TABLE [Sales].[Orders]
+    ADD CONSTRAINT FK_Orders_Customers
+        FOREIGN KEY ([CustomerID])
+        REFERENCES [Sales].[Customers] ([CustomerID]);
+    ALTER TABLE [Sales].[Orders]
+    ADD CONSTRAINT FK_Orders_UserAuthorization
+        FOREIGN KEY ([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+    ALTER TABLE [Sales].[OrderDetails]
+    ADD CONSTRAINT FK_OrderDetails_Orders
+        FOREIGN KEY ([OrderID])
+        REFERENCES [Sales].[Orders] ([OrderID]);
+    ALTER TABLE [Sales].[OrderDetails]
+    ADD CONSTRAINT FK_OrderDetails_Customers
+        FOREIGN KEY ([CustomerID])
+        REFERENCES [Sales].[Customers] ([CustomerID]);
+    ALTER TABLE [Sales].[OrderDetails]
+    ADD CONSTRAINT FK_OrderDetails_UserAuthorization
+        FOREIGN KEY ([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
 
 
 
@@ -671,6 +842,14 @@ BEGIN
     ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_UserAuthorization;
     ALTER TABLE [HumanResources].[Departments] DROP CONSTRAINT FK_Departments_UserAuthorization;
     
+    -- Edwin
+    ALTER TABLE [Sales].[Customers] DROP CONSTRAINT FK_Customers_UserAuthorization;
+    ALTER TABLE [Sales].[Orders] DROP CONSTRAINT FK_Orders_Customers;
+    ALTER TABLE [Sales].[Orders] DROP CONSTRAINT FK_Orders_UserAuthorization;
+    ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_Customers;
+    ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_Orders;
+    ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_UserAuthorization;
+    
     
     -- .. add more here!
 
@@ -742,6 +921,14 @@ BEGIN
     TRUNCATE TABLE [HumanResources].[Staff];
     ALTER SEQUENCE [PkSequence].[DepartmentsSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [HumanResources].[Departments];
+
+    -- Edwin
+    ALTER SEQUENCE [PkSequence].[CustomersSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Sales].[Customers];
+    ALTER SEQUENCE [PkSequence].[OrdersSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Sales].[Orders];
+    ALTER SEQUENCE [PkSequence].[OrderDetailsSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Sales].[OrderDetails];
 
 
     -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
@@ -837,8 +1024,24 @@ BEGIN
         SELECT TableStatus = @TableStatus,
             TableName = '[HumanResources].[Staff]',
             [Row Count] = COUNT(*)
-        FROM [HumanResources].[Staff];
+        FROM [HumanResources].[Staff]
 
+    -- Edwin
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Sales].[Customers]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[Customers]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Sales].[Orders]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[Orders]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Sales].[OrderDetails]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[OrderDetails];
 
     -- ADD NEW TABLE STATUS ENTRIES IN THE FOLLOWING FORMAT:
     -- UNION ALL
@@ -953,10 +1156,152 @@ END;
 GO
 
 
-
-
 -- add new stored procedures in this space:
 
+-- =============================================
+-- Author:		Edwin Wray
+-- Create date: 11/28/2023
+-- Description:	Load data into the Customers table
+-- =============================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Customers]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [Sales].[Customers]
+        (CustomerID, CustomerName, [Address], Town, Country, PostCode 
+            , SpendCapacity, IsReseller, IsCreditRisk, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName
+                        , CASE
+                            WHEN C.Address2 IS NOT NULL THEN CONCAT(C.Address1, ', ', C.Address2)
+                            ELSE C.Address1
+                        END AS [Address]
+                        , Town, C.Country, C.PostCode, M.SpendCapacity, C.IsReseller, C.IsCreditRisk
+                    , @UserAuthorizationKey, @DateAdded
+    FROM [PrestigeCars].[Data].[Customer] AS C
+        LEFT JOIN [PrestigeCars].[Reference].[MarketingInformation] AS M
+            ON C.CustomerName = M.CUST AND C.Country = M.Country
+    ORDER BY CustomerID
+
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].Customers);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Customers] loads data into [Sales].Customers',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+-- =============================================
+-- Author:		Edwin Wray
+-- Create date: 11/28/2023
+-- Description:	Load data into the Orders table
+-- =============================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Orders]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [Sales].[Orders]
+        (OrderID, CustomerID, OrderDate, InvoiceNumber, TotalSalePrice
+            , UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT S.SalesID, CAST(S.CustomerID AS INT) AS CustomerID, S.SaleDate, S.InvoiceNumber, S.TotalSalePrice
+                        , @UserAuthorizationKey, @DateAdded
+    FROM [PrestigeCars].[Data].[Sales] AS S
+    ORDER BY S.SalesID
+
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].Orders);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Orders] loads data into [Sales].Orders',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+-- =============================================
+-- Author:		Edwin Wray
+-- Create date: 11/28/2023
+-- Description:	Load data into the OrderDetails table
+-- =============================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_OrderDetails]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [Sales].[OrderDetails]
+        (OrderDetailsID, OrderID, CustomerID, LineItemNumber, StockID
+            , SalesPrice, LineItemDiscount, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT SD.SalesDetailsID, SD.SalesID, CAST(S.CustomerID AS INT) AS CustomerID, SD.LineItemNumber
+                        , SD.StockID, SD.SalePrice, SD.LineItemDiscount
+                        , @UserAuthorizationKey, @DateAdded
+    FROM [PrestigeCars].[Data].[SalesDetails] AS SD
+        LEFT JOIN [PrestigeCars].[Data].[Sales] AS S
+            ON SD.SalesID = S.SalesID
+    ORDER BY SD.SalesDetailsID
+
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].OrderDetails);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_OrderDetails] loads data into [Sales].OrderDetails',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
 
 
 
@@ -1075,6 +1420,11 @@ BEGIN
     EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
     EXEC [Project2.5].[Load_Departments] @UserAuthorizationKey = 6
     EXEC [Project2.5].[Load_Staff] @UserAuthorizationKey = 6
+
+    -- Edwin
+    EXEC [Project2.5].[Load_Customers] @UserAuthorizationKey = 4
+    EXEC [Project2.5].[Load_Orders] @UserAuthorizationKey = 4
+    EXEC [Project2.5].[Load_OrderDetails] @UserAuthorizationKey = 4
 
 
     --	Check row count before truncation

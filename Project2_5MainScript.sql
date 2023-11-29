@@ -7,6 +7,7 @@ Step1: CREATE THE DATABASE
 Instructions: run only lines 10 and 11 using the master databse 
 
 */
+
 -- CREATE DATABASE [PrestigeCars_9:15_Group1];
 -- GO
 
@@ -60,7 +61,7 @@ GO
 
 
 -- for automatically assigning keys in [DbSecurity].[UserAuthorization]
-CREATE SEQUENCE PkSequence.[UserAuthorizationSequenceObject] 
+CREATE SEQUENCE [PkSequence].[UserAuthorizationSequenceObject] 
  AS [int]
  START WITH 1
  INCREMENT BY 1
@@ -68,8 +69,8 @@ CREATE SEQUENCE PkSequence.[UserAuthorizationSequenceObject]
  MAXVALUE 2147483647
 GO
 
--- for replacing identity key in Process.[WorkflowSteps]
-CREATE SEQUENCE PkSequence.[WorkFlowStepsSequenceObject] 
+-- for replacing identity key in [Process].[WorkflowSteps]
+CREATE SEQUENCE [PkSequence].[WorkFlowStepsSequenceObject] 
  AS [int]
  START WITH 1
  INCREMENT BY 1
@@ -77,11 +78,47 @@ CREATE SEQUENCE PkSequence.[WorkFlowStepsSequenceObject]
  MAXVALUE 2147483647
 GO
 
+-- for automatically assigning keys in [HumanResources].[Staff]
+-- We need to ensure that the 13 staff members from the PrestigeCars database maintain the same StaffIDs so that the ManagerIDs would be acurate
+-- Therefore we restart the sequence to start at 14 for future staff additions, since we already have the first 13 Staff members from the PrestigeCars database
+CREATE SEQUENCE [PkSequence].[StaffSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+ALTER SEQUENCE [PkSequence].[StaffSequenceObject]
+    RESTART WITH 14;
+
+-- for automatically assigning keys in [HumanResources].[Departments]
+CREATE SEQUENCE [PkSequence].[DepartmentsSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+
+--Assigning keys in [Sales].[MakeMarketing]
+CREATE SEQUENCE [PkSequence].[MarketingSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+--Assigning keys in [Sales].[BudgetDelegations]
+CREATE SEQUENCE [PkSequence].[DelegationSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
 -- add more sequences as needed
-
-
-
-
 
 
 ------------------------- CREATE TABLES ---------------------------
@@ -92,6 +129,8 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [DbSecurity].[UserAuthorization]
 GO
 CREATE TABLE [DbSecurity].[UserAuthorization]
 (
@@ -139,13 +178,16 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE Process.[WorkflowSteps]
+DROP TABLE IF EXISTS [Process].[WorkflowSteps]
+GO
+CREATE TABLE [Process].[WorkflowSteps]
 (
     [WorkFlowStepKey] [int] NOT NULL,
     [WorkFlowStepDescription] [nvarchar](100) NOT NULL,
     [WorkFlowStepTableRowCount] [int] NULL,
     [StartingDateTime] [datetime2](7) NULL,
     [EndingDateTime] [datetime2](7) NULL,
+    [QueryTime (ms)] [bigint] NULL, 
     [Class Time] [char](5) NULL,
     [UserAuthorizationKey] [int] NOT NULL,
     PRIMARY KEY CLUSTERED 
@@ -156,7 +198,137 @@ CREATE TABLE Process.[WorkflowSteps]
 GO
 
 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [HumanResources].[Staff]
+GO
+CREATE TABLE [HumanResources].[Staff]
+(
+    [StaffID] [int] NOT NULL,
+    [StaffName] [nvarchar](50) NOT NULL,
+    [ManagerID] [int] NULL,
+    [DepartmentKey] [int] NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[StaffID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+DROP TABLE IF EXISTS [HumanResources].[Departments]
+GO
+CREATE TABLE [HumanResources].[Departments]
+(
+    [DepartmentKey] [int] NOT NULL,
+    [Department] [nvarchar](50) NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[DepartmentKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+DROP TABLE IF EXISTS [Sales].[MakeMarketing]
+GO
+CREATE TABLE [Sales].[MakeMarketing]
+(
+    [MarketingKey] [int] NOT NULL,
+    [MakeName] [nvarchar](50) NOT NULL,
+    [MarketingType] [nvarchar] (50) NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[MarketingKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+DROP TABLE IF EXISTS [Sales].[ColorBudget]
+GO
+CREATE TABLE [Sales].[ColorBudget]
+(
+    [BudgetKey] [int] NOT NULL,
+    [BudgetValue] [money] NOT NULL,
+    [BudgetYear] [int] NOT NULL,
+    [Color] [nvarchar](20) NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[BudgetKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+DROP TABLE IF EXISTS [Sales].[SalesBudget]
+GO
+CREATE TABLE [Sales].[SalesBudget]
+(
+    [BudgetKey] [int] NOT NULL,
+    [BudgetValue] [money] NOT NULL,
+    [BudgetDate] [Date] NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[BudgetKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+DROP TABLE IF EXISTS [Sales].[CountryBudget]
+GO
+CREATE TABLE [Sales].[CountryBudget]
+(
+    [BudgetKey] [int] NOT NULL,
+    [BudgetValue] [money] NOT NULL,
+    [BudgetDate] [Date] NOT NULL,
+    [Country] [nvarchar](50) NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[BudgetKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+DROP TABLE IF EXISTS [Sales].[BudgetDelegations]
+GO
+CREATE TABLE [Sales].[BudgetDelegations]
+(
+    [DelegationKey] [int] NOT NULL,
+    [BudgetArea] [nvarchar](20) NOT NULL,
+    [BudgetAmount] [money] NOT NULL,
+    [BudgetDate] [Date] NOT NULL,
+    [LastUpdated] [Date] NOT NULL,
+    [UserAuthorizationKey] [int] NOT NULL,
+    [DateAdded] [datetime2](7) NOT NULL,
+    PRIMARY KEY CLUSTERED 
+(
+	[DelegationKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 -- add more tables as needed following this format:
 
 -- SET ANSI_NULLS ON
@@ -165,8 +337,7 @@ GO
 -- GO
 -- CREATE TABLE [SCHEMA_NAME].[TABLE_NAME]
 -- (
---     [UserAuthorizationKey] [int] NOT NULL,
---     ...add more columns here 
+--     ...add columns here 
 --     PRIMARY KEY CLUSTERED 
 -- (
 -- 	[UserAuthorizationKey] ASC
@@ -178,21 +349,6 @@ GO
 
 
 
------------------ Prepopulating the UserAuthorization Table with the Group Names -------------
-
-INSERT INTO [DbSecurity].[UserAuthorization]
-([GroupMemberLastName],[GroupMemberFirstName])
-VALUES
-
-        ('Georgievska','Aleksandra'),
-        ('Yakubova','Sigalita'),
-        ('Kong','Nicholas'),
-        ('Wray','Edwin'),
-        ('Ahmed','Ahnaf'),
-        ('Richman','Aryeh');
-GO
-
-
 --------------------- Alter Tables To Update Defaults/Constraints -------------------
 
 
@@ -201,42 +357,91 @@ ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT (NEXT VALUE FOR PkSequ
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('9:15') FOR [ClassTime]
 GO
-ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('PROJECT 2 RECREATE THE BICLASS DATABASE STAR SCHEMA') FOR [IndividualProject]
+ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('PROJECT 2.5  NORMALIZE PRESTIGE CARS SCHEMA') FOR [IndividualProject]
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('GROUP 1') FOR [GroupName]
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT (sysdatetime()) FOR [DateAdded]
 GO
-ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT (NEXT VALUE FOR PkSequence.[WorkFlowStepsSequenceObject]) FOR [WorkFlowStepKey]
+ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT (NEXT VALUE FOR PkSequence.[WorkFlowStepsSequenceObject]) FOR [WorkFlowStepKey]
 GO
-ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT ((0)) FOR [WorkFlowStepTableRowCount]
+ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT ((0)) FOR [WorkFlowStepTableRowCount]
 GO
-ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [StartingDateTime]
+ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [StartingDateTime]
 GO
-ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [EndingDateTime]
+ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [EndingDateTime]
 GO
-ALTER TABLE Process.[WorkflowSteps] ADD  DEFAULT ('9:15') FOR [Class Time]
+ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT ('9:15') FOR [Class Time]
 GO
+ALTER TABLE [HumanResources].[Staff] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[StaffSequenceObject]) FOR [StaffID]
+GO
+ALTER TABLE [HumanResources].[Departments] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[DepartmentsSequenceObject]) FOR [DepartmentKey]
+GO
+ALTER TABLE [Sales].[MakeMarketing] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[MarketingSequenceObject]) FOR [MarketingKey]
+GO
+ALTER TABLE [Sales].[BudgetDelegations] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[DelegationSequenceObject]) FOR [DelegationKey]
+GO
+
+
+
+
+
 
 -- add check constraints in the following format: 
--- ALTER TABLE [CH01-01-Dimension].[DimCustomer]  WITH CHECK ADD  CONSTRAINT [FK_DimCustomer_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
--- REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
--- GO
--- ALTER TABLE [CH01-01-Dimension].[DimCustomer] CHECK CONSTRAINT [FK_DimCustomer_UserAuthorization]
--- GO
 
-
-ALTER TABLE Process.[WorkflowSteps]  WITH CHECK ADD  CONSTRAINT [FK_WorkFlowSteps_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+ALTER TABLE [Process].[WorkflowSteps]  WITH CHECK ADD  CONSTRAINT [FK_WorkFlowSteps_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
 REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 GO
-ALTER TABLE Process.[WorkflowSteps] CHECK CONSTRAINT [FK_WorkFlowSteps_UserAuthorization]
+ALTER TABLE [Process].[WorkflowSteps] CHECK CONSTRAINT [FK_WorkFlowSteps_UserAuthorization]
+GO
+ALTER TABLE [HumanResources].[Staff]  WITH CHECK ADD  CONSTRAINT [FK_Staff_Departments] FOREIGN KEY([DepartmentKey])
+REFERENCES [HumanResources].[Departments] ([DepartmentKey])
+GO
+ALTER TABLE [HumanResources].[Staff] CHECK CONSTRAINT [FK_Staff_Departments]
+GO
+
+ALTER TABLE [HumanResources].[Staff]  WITH CHECK ADD  CONSTRAINT [FK_Staff_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [HumanResources].[Staff] CHECK CONSTRAINT [FK_Staff_UserAuthorization]
+GO
+
+ALTER TABLE [HumanResources].[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Departments_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [HumanResources].[Departments] CHECK CONSTRAINT [FK_Departments_UserAuthorization]
 GO
 
 -- add more here.. 
+ALTER TABLE [Sales].[MakeMarketing]  WITH CHECK ADD  CONSTRAINT [FK_Marketing_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[MakeMarketing] CHECK CONSTRAINT [FK_Marketing_UserAuthorization]
+GO
 
+ALTER TABLE [Sales].[BudgetDelegations]  WITH CHECK ADD  CONSTRAINT [FK_Delegation_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[BudgetDelegations] CHECK CONSTRAINT [FK_Delegation_UserAuthorization]
+GO
 
+ALTER TABLE [Sales].[ColorBudget]  WITH CHECK ADD  CONSTRAINT [FK_Color_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[ColorBudget] CHECK CONSTRAINT [FK_Color_UserAuthorization]
+GO
 
+ALTER TABLE [Sales].[CountryBudget]  WITH CHECK ADD  CONSTRAINT [FK_Country_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[CountryBudget] CHECK CONSTRAINT [FK_Country_UserAuthorization]
+GO
 
+ALTER TABLE [Sales].[SalesBudget]  WITH CHECK ADD  CONSTRAINT [FK_SalesBudget_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Sales].[SalesBudget] CHECK CONSTRAINT [FK_SalesBudget_UserAuthorization]
+GO
 ------------------------- CREATE VIEWS ---------------------------
 /*
 
@@ -257,7 +462,35 @@ would want to query that information quickly for reporting purposes.
 
 
 
+------------------------- CREATE Table Valued Functions ---------------------------
 
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/23
+-- Description:	Input: StaffID
+--              Output: Table of that staff member's managerial hierarchy
+--                      (the staff member, boss, boss's boss, etc.)
+-- =============================================
+DROP FUNCTION IF EXISTS [HumanResources].[GetStaffHierarchy]
+GO
+CREATE FUNCTION [HumanResources].[GetStaffHierarchy]
+    (@id AS INT) RETURNS TABLE
+AS
+RETURN
+    WITH HierarchyCTE AS (
+        SELECT S.StaffID, S.StaffName, S.ManagerID
+        FROM [HumanResources].[Staff] AS S
+        WHERE S.StaffID = @id
+    
+        UNION ALL
+    
+        SELECT E.StaffID, E.StaffName, E.ManagerID
+        FROM HierarchyCTE AS R 
+            INNER JOIN [HumanResources].[Staff] AS E
+                ON R.ManagerID = E.StaffID
+    )
+    SELECT * FROM HierarchyCTE
+GO
 
 
 -------------- Create Stored Procedures --------------
@@ -293,7 +526,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE OR ALTER PROCEDURE Process.[usp_ShowWorkflowSteps]
+CREATE OR ALTER PROCEDURE [Process].[usp_ShowWorkflowSteps]
 AS
 BEGIN
     -- SET NOCOUNT ON added to prevent extra result sets from
@@ -348,6 +581,7 @@ CREATE OR ALTER PROCEDURE [Process].[usp_TrackWorkFlow]
     @WorkFlowStepTableRowCount INT,
     @StartingDateTime DATETIME2,
     @EndingDateTime DATETIME2,
+    @QueryTime BIGINT,
     @UserAuthorizationKey INT
 AS
 BEGIN
@@ -362,15 +596,70 @@ BEGIN
         WorkFlowStepTableRowCount,
         StartingDateTime,
         EndingDateTime,
+        [QueryTime (ms)],
         [Class Time],
         UserAuthorizationKey
         )
     VALUES
-        (@WorkflowDescription, @WorkFlowStepTableRowCount, @StartingDateTime, @EndingDateTime, '9:15',
+        (@WorkflowDescription, @WorkFlowStepTableRowCount, @StartingDateTime, @EndingDateTime, @QueryTime, '9:15',
             @UserAuthorizationKey);
 
 END;
 GO
+
+
+
+
+/*
+
+Stored Procedure: Process.[Load_UserAuthorization]
+
+Description: Prepopulating the UserAuthorization Table with the Group Names 
+
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/126/23
+-- Description:	Load the names & default values into the user authorization table
+-- =============================================
+*/
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_UserAuthorization]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    -- SET NOCOUNT ON added to prevent extra result sets from
+    -- interfering with SELECT statements.
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [DbSecurity].[UserAuthorization]
+    ([GroupMemberLastName],[GroupMemberFirstName])
+    VALUES
+
+            ('Georgievska','Aleksandra'),
+            ('Yakubova','Sigalita'),
+            ('Kong','Nicholas'),
+            ('Wray','Edwin'),
+            ('Ahmed','Ahnaf'),
+            ('Richman','Aryeh');
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = 6;
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow] 'Add Users',
+                                       @WorkFlowStepTableRowCount,
+                                       @StartingDateTime,
+                                       @EndingDateTime,
+                                       @QueryTime,
+                                       @UserAuthorizationKey;
+END;
+GO
+
+
 
 
 
@@ -417,10 +706,48 @@ BEGIN
     -- interfering with SELECT statements.
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    ALTER TABLE Process.[WorkflowSteps]
+    ALTER TABLE [Process].[WorkflowSteps]
     ADD CONSTRAINT FK_WorkFlowSteps_UserAuthorization
         FOREIGN KEY (UserAuthorizationKey)
         REFERENCES [DbSecurity].[UserAuthorization] (UserAuthorizationKey);
+    ALTER TABLE [HumanResources].[Staff]
+    ADD CONSTRAINT FK_Staff_Departments 
+        FOREIGN KEY([DepartmentKey])
+        REFERENCES [HumanResources].[Departments] ([DepartmentKey]);
+    ALTER TABLE [HumanResources].[Staff]
+    ADD CONSTRAINT FK_Staff_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+    ALTER TABLE [HumanResources].[Departments]
+    ADD CONSTRAINT FK_Departments_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+    ALTER TABLE [Sales].[MakeMarketing]
+    ADD CONSTRAINT FK_Marketing_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+    ALTER TABLE [Sales].[BudgetDelegations]
+    ADD CONSTRAINT FK_Delegation_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+    ALTER TABLE [Sales].[ColorBudget]
+    ADD CONSTRAINT FK_Color_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+    ALTER TABLE [Sales].[CountryBudget]
+    ADD CONSTRAINT FK_Country_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+
+
+    ALTER TABLE [Sales].[SalesBudget]
+    ADD CONSTRAINT FK_SalesBudget_UserAuthorization
+        FOREIGN KEY([UserAuthorizationKey])
+        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
 
     -- ADD FOREIGN KEYS USEING THIS FORMAT:
     -- ALTER TABLE [SCHEMA_NAME].[TABLE]
@@ -439,13 +766,17 @@ BEGIN
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
-    EXEC Process.[usp_TrackWorkFlow] 'Add Foreign Keys',
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow] 'Add Foreign Keys',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
+
+
 
 /*
 Stored Procedure: [Project2.5].[DropForeignKeysFromPrestigeCars]
@@ -494,19 +825,34 @@ BEGIN
     -- ...
 
 
-    ALTER TABLE Process.[WorkflowSteps] DROP CONSTRAINT FK_WorkFlowSteps_UserAuthorization;
+    ALTER TABLE [Process].[WorkflowSteps] DROP CONSTRAINT FK_WorkFlowSteps_UserAuthorization;
+    ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_Departments;
+    ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_UserAuthorization;
+    ALTER TABLE [HumanResources].[Departments] DROP CONSTRAINT FK_Departments_UserAuthorization;
+    
+    ALTER TABLE [Sales].[MakeMarketing] DROP CONSTRAINT FK_Marketing_UserAuthorization;
+
+    ALTER TABLE [Sales].[BudgetDelegations] DROP CONSTRAINT FK_Delegation_UserAuthorization;
+    ALTER TABLE [Sales].[ColorBudget] DROP CONSTRAINT FK_Color_UserAuthorization;
+    ALTER TABLE [Sales].[CountryBudget] DROP CONSTRAINT FK_Country_UserAuthorization;
+    ALTER TABLE [Sales].[SalesBudget] DROP CONSTRAINT FK_SalesBudget_UserAuthorization;
+    
+    
     -- .. add more here!
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
-    EXEC Process.[usp_TrackWorkFlow] 'Drop Foreign Keys',
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow] 'Drop Foreign Keys',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
 END;
 GO
+
 
 
 
@@ -554,25 +900,44 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
+    ALTER SEQUENCE [PkSequence].[UserAuthorizationSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [DbSecurity].[UserAuthorization]
+    ALTER SEQUENCE [PkSequence].[WorkFlowStepsSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Process].[WorkFlowSteps]
+    ALTER SEQUENCE [PkSequence].[StaffSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [HumanResources].[Staff];
+    ALTER SEQUENCE [PkSequence].[DepartmentsSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [HumanResources].[Departments];
+
+
     -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
     -- ALTER SEQUENCE PkSequence.DimCustomerSequenceObject RESTART WITH 1;
     -- TRUNCATE TABLE [CH01-01-Dimension].DimGender;
     -- ...
 
+    ALTER SEQUENCE [PkSequence].[MarketingSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Sales].[MakeMarketing];
 
+    ALTER SEQUENCE [PkSequence].[DelegationSequenceObject] RESTART WITH 1;
+    TRUNCATE TABLE [Sales].[BudgetDelegations];
+
+    TRUNCATE TABLE [Sales].[ColorBudget];
+    TRUNCATE TABLE [Sales].[CountryBudget];
+    TRUNCATE TABLE [Sales].[SalesBudget];
 
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
-    EXEC Process.[usp_TrackWorkFlow] 'Truncate Data',
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow] 'Truncate Data',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
-END
+END;
 GO
-
 
 
 
@@ -620,21 +985,13 @@ BEGIN
     -- SET NOCOUNT ON added to prevent extra result sets from
     -- interfering with SELECT statements.
     SET NOCOUNT ON;
-    DECLARE @DateAdded DATETIME2;
-    SET @DateAdded = SYSDATETIME();
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
 
-    DECLARE @DateOfLastUpdate DATETIME2;
-    SET @DateOfLastUpdate = SYSDATETIME();
+    DECLARE @DateOfLastUpdate DATETIME2 = SYSDATETIME();
 
-    DECLARE @StartingDateTime DATETIME2;
-    SET @StartingDateTime = SYSDATETIME();
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    DECLARE @EndingDateTime DATETIME2;
-
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = 0;
-
+    DECLARE @WorkFlowStepTableRowCount INT = 0;
 
     SELECT TableStatus = @TableStatus,
             TableName = '[DbSecurity].[UserAuthorization]',
@@ -644,7 +1001,45 @@ BEGIN
         SELECT TableStatus = @TableStatus,
             TableName = '[Process].[WorkflowSteps]',
             [Row Count] = COUNT(*)
-        FROM Process.[WorkflowSteps];
+        FROM [Process].[WorkflowSteps]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[HumanResources].[Departments]',
+            [Row Count] = COUNT(*)
+        FROM [HumanResources].[Departments]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[HumanResources].[Staff]',
+            [Row Count] = COUNT(*)
+        FROM [HumanResources].[Staff]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+        TableName = '[Sales].[MakeMarketing]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[MakeMarketing]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+        TableName = '[Sales].[BudgetDelegations]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[BudgetDelegations]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+        TableName = '[Sales].[ColorBudget]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[ColorBudget]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+        TableName = '[Sales].[CountryBudget]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[CountryBudget]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+        TableName = '[Sales].[SalesBudget]',
+            [Row Count] = COUNT(*)
+        FROM [Sales].[SalesBudget];
+
+
+
     -- ADD NEW TABLE STATUS ENTRIES IN THE FOLLOWING FORMAT:
     -- UNION ALL
         -- SELECT TableStatus = @TableStatus,
@@ -653,13 +1048,307 @@ BEGIN
         -- FROM [].[]
 
 
-    SET @EndingDateTime = SYSDATETIME();
-
-    EXEC Process.[usp_TrackWorkFlow] 'Procedure: Project2.[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow] 'Procedure: Project2.5[ShowStatusRowCount] loads data into ShowTableStatusRowCount',
                                        @WorkFlowStepTableRowCount,
                                        @StartingDateTime,
                                        @EndingDateTime,
+                                       @QueryTime,
                                        @UserAuthorizationKey;
+END;
+GO
+
+
+-- Decided that there should be no NULL values for department i.e. every staff member should be part of a department
+-- So NULL values from the PrestigeCars database, i.e. the boss, is now in the Executive department using the COALESCE function
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/2023
+-- Description:	Load data into the Departments table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Departments]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [HumanResources].[Departments]
+        (Department, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT COALESCE(Department, 'Executive') AS Department, @UserAuthorizationKey, @DateAdded
+    FROM [PrestigeCars].[Reference].[Staff]
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [HumanResources].Departments);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Departments',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+
+
+-- Had to use an INNER JOIN to get the correct DepartmentID based on the staff member's department from the PrestigeCars Reference.Staff Table
+-- Included the StaffID from the PrestigeCars database instead of the sequence object so that the ManagerIDs remain correct
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Aryeh Richman
+-- Create date: 11/27/2023
+-- Description:	Load data into the Staff table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Staff]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [HumanResources].[Staff]
+        (StaffID, StaffName, ManagerID, DepartmentKey, UserAuthorizationKey, DateAdded)
+    SELECT DISTINCT StaffID, StaffName, ManagerID,
+                    D.DepartmentKey,
+                    @UserAuthorizationKey, @DateAdded
+    FROM [PrestigeCars].[Reference].[Staff] AS S
+        JOIN [HumanResources].[Departments] AS D
+            ON COALESCE(S.Department, 'Executive') = D.Department
+    ORDER BY S.StaffID
+
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [HumanResources].Departments);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Load_Departments] loads data into [HumanResources].Staff',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+
+
+
+-- add new stored procedures in this space:
+/* Stored Proecedure: [Project2.5].[LoadMakeMarketing]
+
+Description: 
+Will pull in data from the Original Prestige Cars database and will reorganize and clean up the data into a more readable and effecient layout
+This table differs from the table its pulling from by separating the marketing types using STRING_SPLIT to make the data more readable are useful in querying.
+*/
+/*
+-- =============================================
+-- Author:		Sigalita Yakubova
+-- Create date: 11/27/23
+-- Description:	Loads data into the Sales Marketing table
+-- =============================================
+*/
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadMakeMarketing]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO Sales.MakeMarketing (MakeName, MarketingType, DateAdded, UserAuthorizationKey)
+    SELECT MakeName, Value AS MarketingType, @DateAdded, @UserAuthorizationKey
+    FROM PrestigeCars.Reference.MarketingCategories
+    CROSS APPLY STRING_SPLIT(MarketingType, ',');
+
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].[MakeMarketing]);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[LoadMakeMarketing] loads data into [Sales].MakeMarketing',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+/* Stored Proecedure: [Project2.5].[LoadBudgetDelegations]
+
+Description: Loads in Budget Information for each location. 
+This table doesn't include comments as they were not helpful and combines budget month and year
+
+*/
+-- =============================================
+-- Author:		Sigalita Yakubova
+-- Create date: 11/28/23
+-- Description:	Loads data into the Sales Budget Delegations table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadBudgetDelegations]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO [Sales].BudgetDelegations (BudgetArea, BudgetAmount, BudgetDate, LastUpdated, UserAuthorizationKey, DateAdded)
+    SELECT BudgetArea, BudgetAmount,
+        DATEFROMPARTS(BudgetYear, BudgetMonth, 1),
+         DateUpdated, @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.SalesBudgets
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].[BudgetDelegations]);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[LoadBudgetDelegations] loads data into [Sales].BudgetDelegations',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+
+-- =============================================
+-- Author:		Sigalita Yakubova
+-- Create date: 11/28/23
+-- Description:	Loads data into the Sales Color Budget table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadColorBudget]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO Sales.ColorBudget (BudgetKey, BudgetValue, BudgetYear, Color, UserAuthorizationKey, DateAdded)
+    SELECT BudgetKey, BudgetValue, [Year], BudgetDetail, @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.Budget
+    WHERE BudgetElement LIKE 'Color';
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].[ColorBudget]);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[LoadColorBudget] loads data into [Sales].ColorBudget',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+-- =============================================
+-- Author:		Sigalita Yakubova
+-- Create date: 11/28/23
+-- Description:	Loads data into the Sales Country Budget table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadCountryBudget]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO Sales.CountryBudget (BudgetKey, BudgetValue, BudgetDate, Country, UserAuthorizationKey, DateAdded)
+    SELECT BudgetKey, BudgetValue, DATEFROMPARTS([Year], [Month], 1), BudgetDetail, @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.Budget
+    WHERE BudgetElement LIKE 'Country';
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].[CountryBudget]);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[LoadCountryBudget] loads data into [Sales].CountryBudget',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
+END;
+GO
+
+-- =============================================
+-- Author:		Sigalita Yakubova
+-- Create date: 11/28/23
+-- Description:	Loads data into the Sales Budget table
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[LoadSalesBudget]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+    INSERT INTO Sales.SalesBudget (BudgetKey, BudgetValue, BudgetDate, UserAuthorizationKey, DateAdded)
+    SELECT BudgetKey, BudgetValue, DATEFROMPARTS([Year], [Month], 1), @UserAuthorizationKey, @DateAdded
+    FROM PrestigeCars.Reference.Budget
+    WHERE BudgetElement LIKE 'Sales';
+
+    DECLARE @WorkFlowStepTableRowCount INT;
+    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
+                                        FROM [Sales].[SalesBudget]);
+
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[LoadSalesBudget] loads data into [Sales].SalesBudget',
+        @WorkFlowStepTableRowCount,
+        @StartingDateTime,
+        @EndingDateTime,
+        @QueryTime,
+        @UserAuthorizationKey
 END;
 GO
 
@@ -670,7 +1359,6 @@ GO
 
 
 
--- add new stored procedures in this space:
 
 
 
@@ -680,16 +1368,42 @@ GO
 
 
 
+-- don't add new stored procuedures after this space:
 
+/*
+-- =============================================
+-- Author:		Aleksandra Georgievska
+-- Create date: 11/14/23
+-- Description:	Clears all data from the Prestige Cars db
+-- =============================================
+*/
 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE OR ALTER PROCEDURE [Project2.5].[TruncatePrestigeCarsDatabase]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
+    -- Drop All of the foreign keys prior to truncating tables in the Prestige Cars db
+    EXEC [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
 
+    --	Check row count before truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Pre-truncate of tables'''
+    
+    --	Always truncate the Star Schema Data
+    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
 
-
-
-
-
--- do not add new stored procuedures after this space:
+    --	Check row count AFTER truncation
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
+		@TableStatus = N'''Post-truncate of tables'''
+END;
+GO
 
 
 /*
@@ -710,10 +1424,6 @@ purpose of managing and updating a star schema data warehouse structure. Here's 
     
     * SET NOCOUNT ON;: This line stops the message that shows the number of rows affected by a T-SQL statement from being returned.
     * DECLARE @StartingDateTime DATETIME2: Declares a variable to store the starting time of the procedure execution.
-    * Dropping Foreign Keys: The procedure calls [Project2].[DropForeignKeysFromStarSchemaData] to drop foreign keys before truncating tables. 
-    This is necessary because you cannot truncate a table that has foreign keys referencing it.
-    * Checking Table Status: Executes [Project2].[ShowTableStatusRowCount] to report the row count of tables before truncation.
-    * Truncating Data: Executes [Project2].[TruncateStarSchemaData] to truncate the data in the star schema.
     * Loading Data: The procedure then loads data into various dimension tables (like product categories, subcategories, product, etc.) 
     and fact tables using multiple EXEC statements. Each EXEC statement calls a specific procedure to load data into a particular table.
     * Recreating Foreign Keys: After loading the data, it recreates the foreign keys using [Project2].[AddForeignKeysToStarSchemaData].
@@ -746,38 +1456,38 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    --	Drop All of the foreign keys prior to truncating tables in the star schema
-    EXEC  [Project2.5].[DropForeignKeysFromPrestigeCars] @UserAuthorizationKey = 1;
-    --
-    --	Check row count before truncation
-    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  
-		@TableStatus = N'''Pre-truncate of tables'''
-    
-    --	Always truncate the Star Schema Data
-    EXEC  [Project2.5].[TruncateStarSchemaData] @UserAuthorizationKey = 3;
-
-    --	Load the star schema
     /*
-                                            Note: User Authorization keys are hardcoded, each representing a different group user 
-                                                Aleksandra Georgievska → User Key 1
-                                                Sigalita Yakubova → User Key 2
-                                                Nicholas Kong → User Key 3
-                                                Edwin Wray → User Key 4
-                                                Ahnaf Ahmed → User Key 5
-                                                Aryeh Richman → User Key 6
-                                            */
+            Note: User Authorization keys are hardcoded, each representing a different group user 
+                    Aleksandra Georgievska → User Key 1
+                    Sigalita Yakubova → User Key 2
+                    Nicholas Kong → User Key 3
+                    Edwin Wray → User Key 4
+                    Ahnaf Ahmed → User Key 5
+                    Aryeh Richman → User Key 6
+    */
 
     -- ADD EXEC COMMANDS IN THE FOLLOWNG FORMAT:
-    -- EXEC  [Project2].[Load_Data] @UserAuthorizationKey = 2;                     -- Change to the appropriate UserAuthorizationKey
+    EXEC [Project2.5].[Load_UserAuthorization] @UserAuthorizationKey = 1
+    EXEC [Project2.5].[LoadMakeMarketing] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadBudgetDelegations] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadColorBudget] @UserAuthorizationKey = 2
+    EXEC [Project2.5].[LoadCountryBudget] @UserAuthorizationKey = 2    
+    EXEC [Project2.5].[LoadSalesBudget] @UserAuthorizationKey = 2    
+    EXEC [Project2.5].[Load_Departments] @UserAuthorizationKey = 6
+    EXEC [Project2.5].[Load_Staff] @UserAuthorizationKey = 6
 
 
-    
-    --	Recreate all of the foreign keys prior after loading the Prestige Cars schema
     --	Check row count before truncation
-    EXEC	[Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
-		@TableStatus = N'''Row Count after loading the star schema'''
-    --
+    EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
+		@TableStatus = N'''Row Count after loading the Prestige Cars db'''
+
+    --	Recreate all of the foreign keys after loading the Prestige Cars schema
     EXEC [Project2.5].[AddForeignKeysToPrestigeCars] @UserAuthorizationKey = 1; -- Change to the appropriate UserAuthorizationKey
---
+
 END;
 GO
+
+
+EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
+EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+EXEC [Process].[usp_ShowWorkflowSteps]

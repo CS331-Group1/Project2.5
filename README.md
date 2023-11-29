@@ -1,6 +1,6 @@
 # CSCI 331 Databases & Data Modeling with Professor Peter Heller
 
-# Project 2.5
+## Project 2.5
 
 Fall 2023
 

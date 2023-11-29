@@ -1,10 +1,6 @@
 # CSCI 331 Databases & Data Modeling with Professor Peter Heller
 
-## Project 2.5
-
-Fall 2023
-
-## Project Goal:
+## Project 2.5 Goal:
 
 Recreate the Prestige Cars into a new “Normalized Database” called ‘PrestigeCarsFinal’ using normalization techniques in addition to what we learned in Project 2 like stored procedures for truncating/transferring data, and tracking stored procedure runtime in the WorkFlowSteps table.
 
@@ -16,3 +12,5 @@ Recreate the Prestige Cars into a new “Normalized Database” called ‘Presti
 - Edwin Wray
 - Sigalita Yakubova
 - Ahnaf Ahmed
+
+Fall 2023

@@ -8,8 +8,8 @@ Instructions: run only lines 10 and 11 using the master databse
 
 */
 
--- CREATE DATABASE [PrestigeCars_9:15_Group1];
--- GO
+--CREATE DATABASE [PrestigeCars_9:15_Group1];
+--GO
 
 /*
 
@@ -57,17 +57,10 @@ GO
 CREATE SCHEMA [Project2.5];
 GO
 
--- Schema for views
-DROP SCHEMA IF EXISTS [G9_1];
-GO
-CREATE SCHEMA [G9_1];
-GO
-
 ------------------------- CREATE SEQUENCES ----------------------------
 
 
 -- for automatically assigning keys in [DbSecurity].[UserAuthorization]
--- Aleks
 CREATE SEQUENCE [PkSequence].[UserAuthorizationSequenceObject] 
  AS [int]
  START WITH 1
@@ -85,7 +78,6 @@ CREATE SEQUENCE [PkSequence].[WorkFlowStepsSequenceObject]
  MAXVALUE 2147483647
 GO
 
--- Aryeh
 -- for automatically assigning keys in [HumanResources].[Staff]
 -- We need to ensure that the 13 staff members from the PrestigeCars database maintain the same StaffIDs so that the ManagerIDs would be acurate
 -- Therefore we restart the sequence to start at 14 for future staff additions, since we already have the first 13 Staff members from the PrestigeCars database
@@ -136,10 +128,9 @@ CREATE SEQUENCE [PkSequence].[OrderDetailsSequenceObject]
  MAXVALUE 2147483647
 GO
 
-
--- Sigi
---Assigning keys in [Sales].[MakeMarketing]
-CREATE SEQUENCE [PkSequence].[MarketingSequenceObject] 
+--Nicholas
+-- for automatically assigning keys in [Production].[Make]
+CREATE SEQUENCE [PkSequence].[MakeSequenceObject] 
  AS [int]
  START WITH 1
  INCREMENT BY 1
@@ -147,8 +138,17 @@ CREATE SEQUENCE [PkSequence].[MarketingSequenceObject]
  MAXVALUE 2147483647
 GO
 
---Assigning keys in [Sales].[BudgetDelegations]
-CREATE SEQUENCE [PkSequence].[DelegationSequenceObject] 
+-- for automatically assigning keys in [Production].[Model]
+CREATE SEQUENCE [PkSequence].[ModelSequenceObject] 
+ AS [int]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 2147483647
+GO
+
+-- for automatically assigning keys in [Production].[Stock]
+CREATE SEQUENCE [PkSequence].[StockSequenceObject] 
  AS [int]
  START WITH 1
  INCREMENT BY 1
@@ -235,7 +235,6 @@ CREATE TABLE [Process].[WorkflowSteps]
 GO
 
 
--- Aryeh
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -262,6 +261,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
 DROP TABLE IF EXISTS [HumanResources].[Departments]
 GO
 CREATE TABLE [HumanResources].[Departments]
@@ -288,8 +288,7 @@ CREATE TABLE [Sales].[Customers]
 (
     [CustomerID] [int] NOT NULL,
     [CustomerName] [nvarchar](150) NULL,
-    [Address1] [nvarchar](50) NULL,
-    [Address2] [nvarchar](50) NULL,
+    [Address] [nvarchar](50) NULL,
     [Town] [nvarchar](50) NULL,
     [Country] [nvarchar](50) NULL,
     [PostCode] [nvarchar](50) NULL,
@@ -351,91 +350,76 @@ CREATE TABLE [Sales].[OrderDetails]
 ) ON [PRIMARY]
 GO
 
-
--- Sigi
-DROP TABLE IF EXISTS [Sales].[MakeMarketing]
+--Nicholas
+SET ANSI_NULLS ON
 GO
-CREATE TABLE [Sales].[MakeMarketing]
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Make]
+GO
+CREATE TABLE [Production].[Make]
 (
-    [MarketingKey] [int] NOT NULL,
-    [MakeName] [nvarchar](50) NOT NULL,
-    [MarketingType] [nvarchar] (50) NOT NULL,
-    [UserAuthorizationKey] [int] NOT NULL,
+    [MakeName] NVARCHAR(100),
+	[MakeID] INT,
+	[UserAuthorizationKey] [int] NOT NULL,
     [DateAdded] [datetime2](7) NOT NULL,
     PRIMARY KEY CLUSTERED 
 (
-	[MarketingKey] ASC
+	[MakeID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 
-DROP TABLE IF EXISTS [Sales].[ColorBudget]
+--Nicholas
+SET ANSI_NULLS ON
 GO
-CREATE TABLE [Sales].[ColorBudget]
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Model]
+GO
+CREATE TABLE [Production].[Model]
 (
-    [BudgetKey] [int] NOT NULL,
-    [BudgetValue] [money] NOT NULL,
-    [BudgetYear] [int] NOT NULL,
-    [Color] [nvarchar](20) NOT NULL,
-    [UserAuthorizationKey] [int] NOT NULL,
+    [ModelName] NVARCHAR(150),
+	[ModelVariant] NVARCHAR(150),
+	[MakeID] INT,
+	[ModelID] INT,
+	[UserAuthorizationKey] [int] NOT NULL,
     [DateAdded] [datetime2](7) NOT NULL,
     PRIMARY KEY CLUSTERED 
 (
-	[BudgetKey] ASC
+	[ModelID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 
-DROP TABLE IF EXISTS [Sales].[SalesBudget]
+--Nicholas
+SET ANSI_NULLS ON
 GO
-CREATE TABLE [Sales].[SalesBudget]
+SET QUOTED_IDENTIFIER ON
+GO
+DROP TABLE IF EXISTS [Production].[Stock]
+GO
+CREATE TABLE [Production].[Stock]
 (
-    [BudgetKey] [int] NOT NULL,
-    [BudgetValue] [money] NOT NULL,
-    [BudgetDate] [Date] NOT NULL,
-    [UserAuthorizationKey] [int] NOT NULL,
+    StockCode NVARCHAR(50),
+	Cost MONEY,
+	RepairsCost MONEY,
+    PartsCost MONEY,
+    TransportInCost MONEY,
+    Color NVARCHAR(50),
+    DateBought DATE,
+    TimeBought TIME,
+	[ModelID] INT,
+	StockID INT,
+	[UserAuthorizationKey] [int] NOT NULL,
     [DateAdded] [datetime2](7) NOT NULL,
     PRIMARY KEY CLUSTERED 
 (
-	[BudgetKey] ASC
+	[StockID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 
-DROP TABLE IF EXISTS [Sales].[CountryBudget]
-GO
-CREATE TABLE [Sales].[CountryBudget]
-(
-    [BudgetKey] [int] NOT NULL,
-    [BudgetValue] [money] NOT NULL,
-    [BudgetDate] [Date] NOT NULL,
-    [Country] [nvarchar](50) NOT NULL,
-    [UserAuthorizationKey] [int] NOT NULL,
-    [DateAdded] [datetime2](7) NOT NULL,
-    PRIMARY KEY CLUSTERED 
-(
-	[BudgetKey] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-
-DROP TABLE IF EXISTS [Sales].[BudgetDelegations]
-GO
-CREATE TABLE [Sales].[BudgetDelegations]
-(
-    [DelegationKey] [int] NOT NULL,
-    [BudgetArea] [nvarchar](20) NOT NULL,
-    [BudgetAmount] [money] NOT NULL,
-    [BudgetDate] [Date] NOT NULL,
-    [LastUpdated] [Date] NOT NULL,
-    [UserAuthorizationKey] [int] NOT NULL,
-    [DateAdded] [datetime2](7) NOT NULL,
-    PRIMARY KEY CLUSTERED 
-(
-	[DelegationKey] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
 -- add more tables as needed following this format:
 
 -- SET ANSI_NULLS ON
@@ -460,7 +444,6 @@ GO
 
 
 -- adding default values in the following format:
--- Aleks
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT (NEXT VALUE FOR PkSequence.[UserAuthorizationSequenceObject]) FOR [UserAuthorizationKey]
 GO
 ALTER TABLE [DbSecurity].[UserAuthorization] ADD  DEFAULT ('9:15') FOR [ClassTime]
@@ -481,8 +464,6 @@ ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT (sysdatetime()) FOR [EndingDa
 GO
 ALTER TABLE [Process].[WorkflowSteps] ADD  DEFAULT ('9:15') FOR [Class Time]
 GO
-
---Aryeh
 ALTER TABLE [HumanResources].[Staff] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[StaffSequenceObject]) FOR [StaffID]
 GO
 ALTER TABLE [HumanResources].[Departments] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[DepartmentsSequenceObject]) FOR [DepartmentKey]
@@ -496,26 +477,23 @@ GO
 ALTER TABLE [Sales].[OrderDetails] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[OrderDetailsSequenceObject]) FOR [OrderDetailsID]
 GO
 
--- Sigi
-ALTER TABLE [Sales].[MakeMarketing] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[MarketingSequenceObject]) FOR [MarketingKey]
+--Nicholas
+ALTER TABLE [Production].[Make] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[MakeSequenceObject]) FOR [MakeID]
 GO
-ALTER TABLE [Sales].[BudgetDelegations] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[DelegationSequenceObject]) FOR [DelegationKey]
+ALTER TABLE [Production].[Model] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[ModelSequenceObject]) FOR [ModelID]
 GO
-
-
-
+ALTER TABLE [Production].[Stock] ADD  DEFAULT (NEXT VALUE FOR [PkSequence].[StockSequenceObject]) FOR [StockID]
+GO
 
 
 
 -- add check constraints in the following format: 
--- Aleks
+
 ALTER TABLE [Process].[WorkflowSteps]  WITH CHECK ADD  CONSTRAINT [FK_WorkFlowSteps_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
 REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 GO
 ALTER TABLE [Process].[WorkflowSteps] CHECK CONSTRAINT [FK_WorkFlowSteps_UserAuthorization]
 GO
-
--- Aryeh
 ALTER TABLE [HumanResources].[Staff]  WITH CHECK ADD  CONSTRAINT [FK_Staff_Departments] FOREIGN KEY([DepartmentKey])
 REFERENCES [HumanResources].[Departments] ([DepartmentKey])
 GO
@@ -571,37 +549,36 @@ GO
 ALTER TABLE [Sales].[OrderDetails] CHECK CONSTRAINT [FK_OrderDetails_UserAuthorization]
 GO
 
--- Sigi
-ALTER TABLE [Sales].[MakeMarketing]  WITH CHECK ADD  CONSTRAINT [FK_Marketing_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
-REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+--Nicholas
+ALTER TABLE [Production].[Model]  WITH CHECK ADD  CONSTRAINT [FK_Model_Make] FOREIGN KEY([MakeID])
+REFERENCES [Production].[Make] ([MakeID])
 GO
-ALTER TABLE [Sales].[MakeMarketing] CHECK CONSTRAINT [FK_Marketing_UserAuthorization]
-GO
-
-ALTER TABLE [Sales].[BudgetDelegations]  WITH CHECK ADD  CONSTRAINT [FK_Delegation_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
-REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
-GO
-ALTER TABLE [Sales].[BudgetDelegations] CHECK CONSTRAINT [FK_Delegation_UserAuthorization]
+ALTER TABLE [Production].[Model] CHECK CONSTRAINT [FK_Model_Make];
 GO
 
-ALTER TABLE [Sales].[ColorBudget]  WITH CHECK ADD  CONSTRAINT [FK_Color_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
-REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+ALTER TABLE [Production].[Stock]  WITH CHECK ADD  CONSTRAINT [FK_Stock_Model] FOREIGN KEY([ModelID])
+REFERENCES [Production].[Model] ([ModelID])
 GO
-ALTER TABLE [Sales].[ColorBudget] CHECK CONSTRAINT [FK_Color_UserAuthorization]
-GO
-
-ALTER TABLE [Sales].[CountryBudget]  WITH CHECK ADD  CONSTRAINT [FK_Country_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
-REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
-GO
-ALTER TABLE [Sales].[CountryBudget] CHECK CONSTRAINT [FK_Country_UserAuthorization]
+ALTER TABLE [Production].[Stock] CHECK CONSTRAINT [FK_Stock_Model];
 GO
 
-ALTER TABLE [Sales].[SalesBudget]  WITH CHECK ADD  CONSTRAINT [FK_SalesBudget_UserAuthorization] FOREIGN KEY([UserAuthorizationKey])
+ALTER TABLE [Production].[Make] WITH CHECK ADD  CONSTRAINT [FK_Make_Authorization] FOREIGN KEY([AuthorizationKey])
 REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
 GO
-ALTER TABLE [Sales].[SalesBudget] CHECK CONSTRAINT [FK_SalesBudget_UserAuthorization]
+ALTER TABLE [Production].[Make]  CHECK CONSTRAINT [FK_Make_Authorization] 
 GO
 
+ALTER TABLE [Production].[Model] WITH CHECK ADD  CONSTRAINT [FK_Model_Authorization] FOREIGN KEY([AuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Production].[Model]  CHECK CONSTRAINT [FK_Model_Authorization] 
+GO
+
+ALTER TABLE [Production].[Stock] WITH CHECK ADD  CONSTRAINT [FK_Stock_Authorization] FOREIGN KEY([AuthorizationKey])
+REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey])
+GO
+ALTER TABLE [Production].[Stock]  CHECK CONSTRAINT [FK_Stock_Authorization] 
+GO
 
 -- add more here.. 
 
@@ -621,143 +598,7 @@ would want to query that information quickly for reporting purposes.
 */
 
 
-
-
-
--- Stored Procedure for creating views
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Ahnaf Ahmed
--- Create date: 11/29/2023
--- Description:	Creates views for PrestigeCars database
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[Create_Views]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-	SET NOCOUNT ON;
-
-	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-	-- uvw_[Sales].[OrdersByYear]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByYear]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByYear]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,C.[CustomerName]
-        ,C.[Country]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,OD.[SalesPrice]
-        ,O.[OrderDate]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[Orders]ByCountry]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCountry]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCountry]
-    AS
-
-    SELECT C.[Country]
-        ,MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,S.[Color]
-        ,OD.[SalesPrice]
-        ,OD.[LineItemDiscount]
-        ,O.[InvoiceNumber]
-        ,C.[CustomerName]
-        ,OD.[OrderDetailsID]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[OrdersByCurrency]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCurrency]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCurrency]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,[$] + S.[Cost] AS [VehicleCostInUSD]
-        ,[￡] + (S.[Cost] * 0.79) [VehicleCostInGBP]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_StockPrices]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_StockPrices]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_StockPrices]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-    FROM [Production].[Stock] AS S
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-    -- G9_1.[uvw_Pivot]
-    EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_Pivot]')
-
-    EXEC ('CREATE VIEW [G9_1].[uvw_Pivot]
-    AS
-
-    SELECT P.ProductName
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2015 THEN OD.[SalesPrice] END) AS [2015]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2016 THEN OD.[SalesPrice] END) AS [2016]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2017 THEN OD.[SalesPrice] END) AS [2017]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2018 THEN OD.[SalesPrice] END) AS [2018]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    GROUP BY S.[Color]')
-
-
-	DECLARE @WorkFlowStepTableRowCount INT = 0;
-
-	DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS BIGINT);
-
-	EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[Create_Views] creates [G9_1].[uvw_OrdersByYear], [G9_1].[uvw_OrdersByCountry], [G9_1].[uvw_OrdersByCurrency], [G9_1].[uvw_StockPrices], and [G9_1].[uvw_Pivot] views for the PrestigeCars database'
-		,@WorkFlowStepTableRowCount
-		,@StartingDateTime
-		,@EndingDateTime
-		,@QueryTime
-		,@UserAuthorizationKey
-END;
-GO
+-- add views here!
 
 
 
@@ -1008,12 +849,10 @@ BEGIN
     -- interfering with SELECT statements.
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    -- Aleks
     ALTER TABLE [Process].[WorkflowSteps]
     ADD CONSTRAINT FK_WorkFlowSteps_UserAuthorization
         FOREIGN KEY (UserAuthorizationKey)
         REFERENCES [DbSecurity].[UserAuthorization] (UserAuthorizationKey);
-    -- Aryeh
     ALTER TABLE [HumanResources].[Staff]
     ADD CONSTRAINT FK_Staff_Departments 
         FOREIGN KEY([DepartmentKey])
@@ -1032,60 +871,59 @@ BEGIN
     ADD CONSTRAINT FK_Customers_UserAuthorization
         FOREIGN KEY ([UserAuthorizationKey])
         REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
     ALTER TABLE [Sales].[Orders]
     ADD CONSTRAINT FK_Orders_Customers
         FOREIGN KEY ([CustomerID])
         REFERENCES [Sales].[Customers] ([CustomerID]);
-
     ALTER TABLE [Sales].[Orders]
     ADD CONSTRAINT FK_Orders_UserAuthorization
         FOREIGN KEY ([UserAuthorizationKey])
         REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
     ALTER TABLE [Sales].[OrderDetails]
     ADD CONSTRAINT FK_OrderDetails_Orders
         FOREIGN KEY ([OrderID])
         REFERENCES [Sales].[Orders] ([OrderID]);
-
     ALTER TABLE [Sales].[OrderDetails]
     ADD CONSTRAINT FK_OrderDetails_Customers
         FOREIGN KEY ([CustomerID])
         REFERENCES [Sales].[Customers] ([CustomerID]);
-
     ALTER TABLE [Sales].[OrderDetails]
     ADD CONSTRAINT FK_OrderDetails_UserAuthorization
         FOREIGN KEY ([UserAuthorizationKey])
         REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
 
+	--Nicholas
+	ALTER TABLE [Production].[Make]  
+	ADD CONSTRAINT FK_Make_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Model]  
+	ADD CONSTRAINT FK_Model_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Stock]  
+	ADD CONSTRAINT FK_Stock_UserAuthorization
+		FOREIGN KEY ([UserAuthorizationKey])
+		REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
+	ALTER TABLE [Production].[Model]
+	ADD CONSTRAINT FK_Model_Make
+		FOREIGN KEY ([MakeID])
+		REFERENCES [Production].[Make](MakeID);
+	ALTER TABLE [Production].[Stock]
+	ADD CONSTRAINT FK_Stock_Model
+		FOREIGN KEY ([ModelID])
+	REFERENCES [Production].[Model](ModelID);
 
-    -- Sigi
-    ALTER TABLE [Sales].[MakeMarketing]
-    ADD CONSTRAINT FK_Marketing_UserAuthorization
-        FOREIGN KEY([UserAuthorizationKey])
-        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
-    ALTER TABLE [Sales].[BudgetDelegations]
-    ADD CONSTRAINT FK_Delegation_UserAuthorization
-        FOREIGN KEY([UserAuthorizationKey])
-        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
-    ALTER TABLE [Sales].[ColorBudget]
-    ADD CONSTRAINT FK_Color_UserAuthorization
-        FOREIGN KEY([UserAuthorizationKey])
-        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
-    ALTER TABLE [Sales].[CountryBudget]
-    ADD CONSTRAINT FK_Country_UserAuthorization
-        FOREIGN KEY([UserAuthorizationKey])
-        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
-    ALTER TABLE [Sales].[SalesBudget]
-    ADD CONSTRAINT FK_SalesBudget_UserAuthorization
-        FOREIGN KEY([UserAuthorizationKey])
-        REFERENCES [DbSecurity].[UserAuthorization] ([UserAuthorizationKey]);
-
-    -- ADD FOREIGN KEYS HERE:
+    -- ADD FOREIGN KEYS USEING THIS FORMAT:
+    -- ALTER TABLE [SCHEMA_NAME].[TABLE]
+    -- ADD CONSTRAINT FK_Data_DimCustomer
+    --     FOREIGN KEY (CustomerKey)
+    --     REFERENCES [CH01-01-Dimension].DimCustomer (CustomerKey);
+    -- ALTER TABLE [CH01-01-Fact].[Data]
+    -- ADD CONSTRAINT FK_Data_DimGender
+    --     FOREIGN KEY (Gender)
+    --     REFERENCES [CH01-01-Dimension].DimGender (Gender);
+    -- ...
 
 
 
@@ -1152,20 +990,10 @@ BEGIN
     -- ...
 
 
-    -- Aleks
     ALTER TABLE [Process].[WorkflowSteps] DROP CONSTRAINT FK_WorkFlowSteps_UserAuthorization;
-
-    -- Aryeh
     ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_Departments;
     ALTER TABLE [HumanResources].[Staff] DROP CONSTRAINT FK_Staff_UserAuthorization;
     ALTER TABLE [HumanResources].[Departments] DROP CONSTRAINT FK_Departments_UserAuthorization;
-    
-    -- Sigi
-    ALTER TABLE [Sales].[MakeMarketing] DROP CONSTRAINT FK_Marketing_UserAuthorization;
-    ALTER TABLE [Sales].[BudgetDelegations] DROP CONSTRAINT FK_Delegation_UserAuthorization;
-    ALTER TABLE [Sales].[ColorBudget] DROP CONSTRAINT FK_Color_UserAuthorization;
-    ALTER TABLE [Sales].[CountryBudget] DROP CONSTRAINT FK_Country_UserAuthorization;
-    ALTER TABLE [Sales].[SalesBudget] DROP CONSTRAINT FK_SalesBudget_UserAuthorization;
     
     -- Edwin
     ALTER TABLE [Sales].[Customers] DROP CONSTRAINT FK_Customers_UserAuthorization;
@@ -1175,6 +1003,16 @@ BEGIN
     ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_Orders;
     ALTER TABLE [Sales].[OrderDetails] DROP CONSTRAINT FK_OrderDetails_UserAuthorization;
     
+    -- Nicholas 
+	ALTER TABLE [Production].[Model] DROP CONSTRAINT FK_Model_Make;
+	ALTER TABLE [Production].[Stock] DROP CONSTRAINT FK_Stock_Model;
+	ALTER TABLE [Production].[Make] DROP CONSTRAINT  FK_Make_UserAuthorization;
+	ALTER TABLE [Production].[Model] DROP CONSTRAINT FK_Model_UserAuthorization;
+	ALTER TABLE [Production].[Stock] DROP CONSTRAINT FK_Stock_UserAuthorization;
+
+
+
+
     -- .. add more here!
 
     DECLARE @WorkFlowStepTableRowCount INT;
@@ -1236,14 +1074,11 @@ BEGIN
     -- interfering with SELECT statements.
     SET NOCOUNT ON;
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-    
-    -- Aleks
+
     ALTER SEQUENCE [PkSequence].[UserAuthorizationSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [DbSecurity].[UserAuthorization]
     ALTER SEQUENCE [PkSequence].[WorkFlowStepsSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [Process].[WorkFlowSteps]
-
-    -- Aryeh
     ALTER SEQUENCE [PkSequence].[StaffSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [HumanResources].[Staff];
     ALTER SEQUENCE [PkSequence].[DepartmentsSequenceObject] RESTART WITH 1;
@@ -1257,18 +1092,21 @@ BEGIN
     ALTER SEQUENCE [PkSequence].[OrderDetailsSequenceObject] RESTART WITH 1;
     TRUNCATE TABLE [Sales].[OrderDetails];
 
-    -- Sigi
-    ALTER SEQUENCE [PkSequence].[MarketingSequenceObject] RESTART WITH 1;
-    TRUNCATE TABLE [Sales].[MakeMarketing];
+	-- Nicholas
+	ALTER SEQUENCE [PkSequence].[MakeSequenceObject] RESTART WITH 1;
+	TRUNCATE TABLE [Production].[Make];
+	ALTER SEQUENCE [PkSequence].[ModelSequenceObject] RESTART WITH 1; 
+	TRUNCATE TABLE [Production].[Model];
+	ALTER SEQUENCE [PkSequence].[StockSequenceObject] RESTART WITH 1;
+	TRUNCATE TABLE [Production].[Stock];
 
-    ALTER SEQUENCE [PkSequence].[DelegationSequenceObject] RESTART WITH 1;
-    TRUNCATE TABLE [Sales].[BudgetDelegations];
+    -- ADD TRUNCATE COMMANDS IN THE FOLLOWING FORAMT:
+    -- ALTER SEQUENCE PkSequence.DimCustomerSequenceObject RESTART WITH 1;
+    -- TRUNCATE TABLE [CH01-01-Dimension].DimGender;
+    -- ...
 
-    TRUNCATE TABLE [Sales].[ColorBudget];
-    TRUNCATE TABLE [Sales].[CountryBudget];
-    TRUNCATE TABLE [Sales].[SalesBudget];
 
-    -- add truncate commands here
+
 
     DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = 0;
@@ -1356,32 +1194,7 @@ BEGIN
             TableName = '[HumanResources].[Staff]',
             [Row Count] = COUNT(*)
         FROM [HumanResources].[Staff]
-    -- Sigi
-    UNION ALL
-        SELECT TableStatus = @TableStatus,
-        TableName = '[Sales].[MakeMarketing]',
-            [Row Count] = COUNT(*)
-        FROM [Sales].[MakeMarketing]
-    UNION ALL
-        SELECT TableStatus = @TableStatus,
-        TableName = '[Sales].[BudgetDelegations]',
-            [Row Count] = COUNT(*)
-        FROM [Sales].[BudgetDelegations]
-    UNION ALL
-        SELECT TableStatus = @TableStatus,
-        TableName = '[Sales].[ColorBudget]',
-            [Row Count] = COUNT(*)
-        FROM [Sales].[ColorBudget]
-    UNION ALL
-        SELECT TableStatus = @TableStatus,
-        TableName = '[Sales].[CountryBudget]',
-            [Row Count] = COUNT(*)
-        FROM [Sales].[CountryBudget]
-    UNION ALL
-        SELECT TableStatus = @TableStatus,
-        TableName = '[Sales].[SalesBudget]',
-            [Row Count] = COUNT(*)
-        FROM [Sales].[SalesBudget]
+
     -- Edwin
     UNION ALL
         SELECT TableStatus = @TableStatus,
@@ -1397,11 +1210,31 @@ BEGIN
         SELECT TableStatus = @TableStatus,
             TableName = '[Sales].[OrderDetails]',
             [Row Count] = COUNT(*)
-        FROM [Sales].[OrderDetails];
+        FROM [Sales].[OrderDetails]
 
+	--Nicholas
+	UNION ALL
+	      SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Make]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Make]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Model]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Model]
+    UNION ALL
+        SELECT TableStatus = @TableStatus,
+            TableName = '[Production].[Stock]',
+            [Row Count] = COUNT(*)
+        FROM [Production].[Stock];
 
-    -- ADD NEW TABLE STATUS ENTRIES HERE:
-
+    -- ADD NEW TABLE STATUS ENTRIES IN THE FOLLOWING FORMAT:
+    -- UNION ALL
+        -- SELECT TableStatus = @TableStatus,
+            -- TableName = ''
+            -- [Row Count] = COUNT(*)
+        -- FROM [].[]
 
 
     DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
@@ -1509,6 +1342,7 @@ END;
 GO
 
 
+-- add new stored procedures in this space:
 
 -- =============================================
 -- Author:		Edwin Wray
@@ -1531,9 +1365,13 @@ BEGIN
     DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
     INSERT INTO [Sales].[Customers]
-        (CustomerID, CustomerName, [Address1], [Address2], Town, Country, PostCode 
+        (CustomerID, CustomerName, [Address], Town, Country, PostCode 
             , SpendCapacity, IsReseller, IsCreditRisk, UserAuthorizationKey, DateAdded)
-    SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName, C.Address1, C.Address2
+    SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName
+                        , CASE
+                            WHEN C.Address2 IS NOT NULL THEN CONCAT(C.Address1, ', ', C.Address2)
+                            ELSE C.Address1
+                        END AS [Address]
                         , Town, C.Country, C.PostCode, M.SpendCapacity, C.IsReseller, C.IsCreditRisk
                     , @UserAuthorizationKey, @DateAdded
     FROM [PrestigeCars].[Data].[Customer] AS C
@@ -1651,220 +1489,62 @@ BEGIN
 END;
 GO
 
+--============================================================
+-- Author: Nicholas Kong
+-- Create date: 11/28/2023
+-- Description: Extract from Source to Target for Production.Model & Normalize
+--============================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
--- Sigi
-/* Stored Proecedure: [Project2.5].[LoadMakeMarketing]
-
-Description: 
-Will pull in data from the Original Prestige Cars database and will reorganize and clean up the data into a more readable and effecient layout
-This table differs from the table its pulling from by separating the marketing types using STRING_SPLIT to make the data more readable are useful in querying.
-*/
-/*
--- =============================================
--- Author:		Sigalita Yakubova
--- Create date: 11/27/23
--- Description:	Loads data into the Sales Marketing table
--- =============================================
-*/
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadMakeMarketing]
-    @UserAuthorizationKey INT
+CREATE OR ALTER PROCEDURE [Project2.5].[Load_Model]
+	@UserAuthorizationKey INT
 AS
 BEGIN
-    SET NOCOUNT ON;
+	
+	SET NOCOUNT ON;
 
-    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
 
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+	-- Extract Process
 
-    INSERT INTO Sales.MakeMarketing (MakeName, MarketingType, DateAdded, UserAuthorizationKey)
-    SELECT MakeName, Value AS MarketingType, @DateAdded, @UserAuthorizationKey
-    FROM PrestigeCars.Reference.MarketingCategories
-    CROSS APPLY STRING_SPLIT(MarketingType, ',');
+    -- Insert distinct rows from the source table
+    -- Use ISNULL to handle null values in the ModelID column
+    -- Coalesce resolves the rows displaying null values
+    -- Nullif '' resolves the rows displaying empty string
+    INSERT INTO [Production].[Model](ModelName, ModelVariant, MakeID,ModelID, UserAuthorizationKey,DateAdded)
+    SELECT DISTINCT
+        COALESCE(NULLIF(ModelName, ''), 'Not Specified') AS ModelName,
+        COALESCE(NULLIF(ModelVariant, ''), 'Not Specified') AS ModelVariant,
+		M.MakeID,
+		M.ModelID, 
+		@UserAuthorizationKey,
+		@DateAdded
+    FROM PrestigeCars.Data.Model AS M
+	JOIN [PrestigeCars].[Data].[Stock] AS S
+		ON M.ModelID = S.ModelID
+	Order By M.ModelID
 
-
-    DECLARE @WorkFlowStepTableRowCount INT;
+	DECLARE @WorkFlowStepTableRowCount INT;
     SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
-                                        FROM [Sales].[MakeMarketing]);
+                                        FROM [Production].Model);
 
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
+    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME();
+
+	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
     EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[LoadMakeMarketing] loads data into [Sales].MakeMarketing',
+        'Procedure: [Project2.5].[Load_Make] loads data into [Production].Make',
         @WorkFlowStepTableRowCount,
         @StartingDateTime,
         @EndingDateTime,
         @QueryTime,
         @UserAuthorizationKey
+
 END;
 GO
-/* Stored Proecedure: [Project2.5].[LoadBudgetDelegations]
-
-Description: Loads in Budget Information for each location. 
-This table doesn't include comments as they were not helpful and combines budget month and year
-
-*/
--- =============================================
--- Author:		Sigalita Yakubova
--- Create date: 11/28/23
--- Description:	Loads data into the Sales Budget Delegations table
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadBudgetDelegations]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    INSERT INTO [Sales].BudgetDelegations (BudgetArea, BudgetAmount, BudgetDate, LastUpdated, UserAuthorizationKey, DateAdded)
-    SELECT BudgetArea, BudgetAmount,
-        DATEFROMPARTS(BudgetYear, BudgetMonth, 1),
-         DateUpdated, @UserAuthorizationKey, @DateAdded
-    FROM PrestigeCars.Reference.SalesBudgets
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
-                                        FROM [Sales].[BudgetDelegations]);
-
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
-    EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[LoadBudgetDelegations] loads data into [Sales].BudgetDelegations',
-        @WorkFlowStepTableRowCount,
-        @StartingDateTime,
-        @EndingDateTime,
-        @QueryTime,
-        @UserAuthorizationKey
-END;
-GO
-
-
--- =============================================
--- Author:		Sigalita Yakubova
--- Create date: 11/28/23
--- Description:	Loads data into the Sales Color Budget table
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadColorBudget]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    INSERT INTO Sales.ColorBudget (BudgetKey, BudgetValue, BudgetYear, Color, UserAuthorizationKey, DateAdded)
-    SELECT BudgetKey, BudgetValue, [Year], BudgetDetail, @UserAuthorizationKey, @DateAdded
-    FROM PrestigeCars.Reference.Budget
-    WHERE BudgetElement LIKE 'Color';
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
-                                        FROM [Sales].[ColorBudget]);
-
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
-    EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[LoadColorBudget] loads data into [Sales].ColorBudget',
-        @WorkFlowStepTableRowCount,
-        @StartingDateTime,
-        @EndingDateTime,
-        @QueryTime,
-        @UserAuthorizationKey
-END;
-GO
-
--- =============================================
--- Author:		Sigalita Yakubova
--- Create date: 11/28/23
--- Description:	Loads data into the Sales Country Budget table
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadCountryBudget]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    INSERT INTO Sales.CountryBudget (BudgetKey, BudgetValue, BudgetDate, Country, UserAuthorizationKey, DateAdded)
-    SELECT BudgetKey, BudgetValue, DATEFROMPARTS([Year], [Month], 1), BudgetDetail, @UserAuthorizationKey, @DateAdded
-    FROM PrestigeCars.Reference.Budget
-    WHERE BudgetElement LIKE 'Country';
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
-                                        FROM [Sales].[CountryBudget]);
-
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
-    EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[LoadCountryBudget] loads data into [Sales].CountryBudget',
-        @WorkFlowStepTableRowCount,
-        @StartingDateTime,
-        @EndingDateTime,
-        @QueryTime,
-        @UserAuthorizationKey
-END;
-GO
-
--- =============================================
--- Author:		Sigalita Yakubova
--- Create date: 11/28/23
--- Description:	Loads data into the Sales Budget table
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[LoadSalesBudget]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-    DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-    INSERT INTO Sales.SalesBudget (BudgetKey, BudgetValue, BudgetDate, UserAuthorizationKey, DateAdded)
-    SELECT BudgetKey, BudgetValue, DATEFROMPARTS([Year], [Month], 1), @UserAuthorizationKey, @DateAdded
-    FROM PrestigeCars.Reference.Budget
-    WHERE BudgetElement LIKE 'Sales';
-
-    DECLARE @WorkFlowStepTableRowCount INT;
-    SET @WorkFlowStepTableRowCount = (SELECT COUNT(*)
-                                        FROM [Sales].[SalesBudget]);
-
-    DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-    DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS bigint);
-    EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[LoadSalesBudget] loads data into [Sales].SalesBudget',
-        @WorkFlowStepTableRowCount,
-        @StartingDateTime,
-        @EndingDateTime,
-        @QueryTime,
-        @UserAuthorizationKey
-END;
-GO
-
--- add new stored procedures in this space:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 -- don't add new stored procuedures after this space:
 
@@ -1974,16 +1654,8 @@ BEGIN
     EXEC [Project2.5].[Load_Orders] @UserAuthorizationKey = 4
     EXEC [Project2.5].[Load_OrderDetails] @UserAuthorizationKey = 4
 
-    -- Ahnaf
-    EXEC [Project2.5].[Create_Views] @UserAuthorizationKey = 5
-
-    -- Sigi
-    EXEC [Project2.5].[LoadMakeMarketing] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadBudgetDelegations] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadColorBudget] @UserAuthorizationKey = 2
-    EXEC [Project2.5].[LoadCountryBudget] @UserAuthorizationKey = 2    
-    EXEC [Project2.5].[LoadSalesBudget] @UserAuthorizationKey = 2  
-
+	--
+	EXEC [Project2.5].[Load_Model]  @UserAuthorizationKey = 3
 
     --	Check row count before truncation
     EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
@@ -1995,173 +1667,7 @@ BEGIN
 END;
 GO
 
------------------ EXEC COMMANDS TO MANAGE THE DB -----------------------
 
--- run the following command to load the database
--- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
-
--- run the following 2 exec commands to CLEAR and load the database 
 -- EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
 -- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
-
--- run the following to show the workflow steps table 
--- EXEC [Process].[usp_ShowWorkflowSteps]
-
-
-
-
-------------------------- CREATE VIEWS ---------------------------
-
--- The module 'Create_Views' depends on the missing object 'Process.usp_TrackWorkFlow'. 
--- so this code block was moved to the end of the script after the db has been created
-/*
-
-These views preserve some tables from the original Prestige Cars database. 
-The original tables had various issues (ex: some were determined to be 
-redundant) and so were broken into new tables in order to adhere to 
-normalization techniques. 
-Some original tables were preserved in Views since it's clear the business
-would want to query that information quickly for reporting purposes.
-
-*/
-
-
-
-
-
--- Stored Procedure for creating views
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Ahnaf Ahmed
--- Create date: 11/29/2023
--- Description:	Creates views for PrestigeCars database
--- =============================================
-CREATE OR ALTER PROCEDURE [Project2.5].[Create_Views]
-    @UserAuthorizationKey INT
-AS
-BEGIN
-	SET NOCOUNT ON;
-
-	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
-
-	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
-
-	-- uvw_[Sales].[OrdersByYear]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByYear]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByYear]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,C.[CustomerName]
-        ,C.[Country]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,OD.[SalesPrice]
-        ,O.[OrderDate]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[Orders]ByCountry]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCountry]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCountry]
-    AS
-
-    SELECT C.[Country]
-        ,MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-        ,S.[RepairsCost]
-        ,S.[PartsCost]
-        ,S.[TransportInCost]
-        ,S.[Color]
-        ,OD.[SalesPrice]
-        ,OD.[LineItemDiscount]
-        ,O.[InvoiceNumber]
-        ,C.[CustomerName]
-        ,OD.[OrderDetailsID]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_[Sales].[OrdersByCurrency]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCurrency]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCurrency]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,[$] + S.[Cost] AS [VehicleCostInUSD]
-        ,[￡] + (S.[Cost] * 0.79) [VehicleCostInGBP]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-	-- G9_1.[uvw_StockPrices]
-	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_StockPrices]')
-
-	EXEC ('CREATE VIEW [G9_1].[uvw_StockPrices]
-    AS
-
-    SELECT MA.[MakeName]
-        ,MO.[ModelName]
-        ,S.[Cost]
-    FROM [Production].[Stock] AS S
-    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
-    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
-
-
-    -- G9_1.[uvw_Pivot]
-    EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_Pivot]')
-
-    EXEC ('CREATE VIEW [G9_1].[uvw_Pivot]
-    AS
-
-    SELECT P.ProductName
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2015 THEN OD.[SalesPrice] END) AS [2015]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2016 THEN OD.[SalesPrice] END) AS [2016]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2017 THEN OD.[SalesPrice] END) AS [2017]
-        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2018 THEN OD.[SalesPrice] END) AS [2018]
-    FROM [Sales].[Orders] AS O
-    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
-    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
-    GROUP BY S.[Color]')
-
-
-	DECLARE @WorkFlowStepTableRowCount INT = 0;
-
-	DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
-	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS BIGINT);
-
-	EXEC [Process].[usp_TrackWorkFlow]
-        'Procedure: [Project2.5].[Create_Views] creates [G9_1].[uvw_OrdersByYear], [G9_1].[uvw_OrdersByCountry], [G9_1].[uvw_OrdersByCurrency], [G9_1].[uvw_StockPrices], and [G9_1].[uvw_Pivot] views for the PrestigeCars database'
-		,@WorkFlowStepTableRowCount
-		,@StartingDateTime
-		,@EndingDateTime
-		,@QueryTime
-		,@UserAuthorizationKey
-END;
-GO
-
-
+--EXEC [Process].[usp_ShowWorkflowSteps]

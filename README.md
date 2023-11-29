@@ -1,7 +1,7 @@
 # CSCI 331 Databases & Data Modeling
 
-CUNY Queens College
-Professor Peter Heller
+CUNY Queens College  
+Professor Peter Heller  
 Fall 2023
 
 ## Project 2.5 Goal:

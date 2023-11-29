@@ -57,6 +57,12 @@ GO
 CREATE SCHEMA [Project2.5];
 GO
 
+-- Schema for views
+DROP SCHEMA IF EXISTS [G9_1];
+GO
+CREATE SCHEMA [G9_1];
+GO
+
 ------------------------- CREATE SEQUENCES ----------------------------
 
 
@@ -465,7 +471,143 @@ would want to query that information quickly for reporting purposes.
 */
 
 
--- add views here!
+
+
+
+-- Stored Procedure for creating views
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Ahnaf Ahmed
+-- Create date: 11/29/2023
+-- Description:	Creates views for PrestigeCars database
+-- =============================================
+CREATE OR ALTER PROCEDURE [Project2.5].[Create_Views]
+    @UserAuthorizationKey INT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @DateAdded DATETIME2 = SYSDATETIME();
+
+	DECLARE @StartingDateTime DATETIME2 = SYSDATETIME();
+
+	-- uvw_[Sales].[OrdersByYear]
+	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByYear]')
+
+	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByYear]
+    AS
+
+    SELECT MA.[MakeName]
+        ,MO.[ModelName]
+        ,C.[CustomerName]
+        ,C.[Country]
+        ,S.[Cost]
+        ,S.[RepairsCost]
+        ,S.[PartsCost]
+        ,S.[TransportInCost]
+        ,OD.[SalesPrice]
+        ,O.[OrderDate]
+    FROM [Sales].[Orders] AS O
+    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
+    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
+    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
+    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
+    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
+
+
+	-- G9_1.[uvw_[Sales].[Orders]ByCountry]
+	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCountry]')
+
+	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCountry]
+    AS
+
+    SELECT C.[Country]
+        ,MA.[MakeName]
+        ,MO.[ModelName]
+        ,S.[Cost]
+        ,S.[RepairsCost]
+        ,S.[PartsCost]
+        ,S.[TransportInCost]
+        ,S.[Color]
+        ,OD.[SalesPrice]
+        ,OD.[LineItemDiscount]
+        ,O.[InvoiceNumber]
+        ,C.[CustomerName]
+        ,OD.[OrderDetailsID]
+    FROM [Sales].[Orders] AS O
+    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
+    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
+    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
+    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
+    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
+
+
+	-- G9_1.[uvw_[Sales].[OrdersByCurrency]
+	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_OrdersByCurrency]')
+
+	EXEC ('CREATE VIEW [G9_1].[uvw_OrdersByCurrency]
+    AS
+
+    SELECT MA.[MakeName]
+        ,MO.[ModelName]
+        ,[$] + S.[Cost] AS [VehicleCostInUSD]
+        ,[￡] + (S.[Cost] * 0.79) [VehicleCostInGBP]
+    FROM [Sales].[Orders] AS O
+    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
+    INNER JOIN [Sales].[Customers] AS C ON O.[CustomerID] = C.[CustomerID]
+    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
+    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
+    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
+
+
+	-- G9_1.[uvw_StockPrices]
+	EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_StockPrices]')
+
+	EXEC ('CREATE VIEW [G9_1].[uvw_StockPrices]
+    AS
+
+    SELECT MA.[MakeName]
+        ,MO.[ModelName]
+        ,S.[Cost]
+    FROM [Production].[Stock] AS S
+    INNER JOIN [Production].[Model] AS MO ON S.[ModelID] = MO.[ModelID]
+    INNER JOIN [Production].[Make] AS MA ON MO.[MakeID] = MA.[MakeID]')
+
+
+    -- G9_1.[uvw_Pivot]
+    EXEC ('DROP VIEW IF EXISTS [G9_1].[uvw_Pivot]')
+
+    EXEC ('CREATE VIEW [G9_1].[uvw_Pivot]
+    AS
+
+    SELECT P.ProductName
+        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2015 THEN OD.[SalesPrice] END) AS [2015]
+        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2016 THEN OD.[SalesPrice] END) AS [2016]
+        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2017 THEN OD.[SalesPrice] END) AS [2017]
+        ,SUM(CASE WHEN YEAR(O.OrderDate) = 2018 THEN OD.[SalesPrice] END) AS [2018]
+    FROM [Sales].[Orders] AS O
+    INNER JOIN [Sales].[OrderDetails] AS OD ON O.[OrderID] = OD.[OrderID]
+    INNER JOIN [Production].[Stock] AS S ON OD.[StockID] = S.[StockID]
+    GROUP BY S.[Color]')
+
+
+	DECLARE @WorkFlowStepTableRowCount INT = 0;
+
+	DECLARE @EndingDateTime DATETIME2 = SYSDATETIME()
+	DECLARE @QueryTime BIGINT = CAST(DATEDIFF(MILLISECOND, @StartingDateTime, @EndingDateTime) AS BIGINT);
+
+	EXEC [Process].[usp_TrackWorkFlow]
+        'Procedure: [Project2.5].[Create_Views] creates [G9_1].[uvw_OrdersByYear], [G9_1].[uvw_OrdersByCountry], [G9_1].[uvw_OrdersByCurrency], [G9_1].[uvw_StockPrices], and [G9_1].[uvw_Pivot] views for the PrestigeCars database'
+		,@WorkFlowStepTableRowCount
+		,@StartingDateTime
+		,@EndingDateTime
+		,@QueryTime
+		,@UserAuthorizationKey
+END;
+GO
 
 
 
@@ -1184,7 +1326,7 @@ BEGIN
             , SpendCapacity, IsReseller, IsCreditRisk, UserAuthorizationKey, DateAdded)
     SELECT DISTINCT CAST(C.CustomerID AS INT) AS CustomerID, C.CustomerName, C.Address1, C.Address2
                         , Town, C.Country, C.PostCode, M.SpendCapacity, C.IsReseller, C.IsCreditRisk
-                        , @UserAuthorizationKey, @DateAdded
+                    , @UserAuthorizationKey, @DateAdded
     FROM [PrestigeCars].[Data].[Customer] AS C
         LEFT JOIN [PrestigeCars].[Reference].[MarketingInformation] AS M
             ON C.CustomerName = M.CUST AND C.Country = M.Country
@@ -1423,6 +1565,9 @@ BEGIN
     EXEC [Project2.5].[Load_Orders] @UserAuthorizationKey = 4
     EXEC [Project2.5].[Load_OrderDetails] @UserAuthorizationKey = 4
 
+    -- Ahnaf
+    EXEC [Project2.5].[Create_Views] @UserAuthorizationKey = 5
+
 
     --	Check row count before truncation
     EXEC [Project2.5].[ShowTableStatusRowCount] @UserAuthorizationKey = 6,  -- Change to the appropriate UserAuthorizationKey
@@ -1434,7 +1579,14 @@ BEGIN
 END;
 GO
 
+----------------- EXEC COMMANDS TO MANAGE THE DB -----------------------
 
-EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
-EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
-EXEC [Process].[usp_ShowWorkflowSteps]
+-- run the following command to load the database
+-- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+
+-- run the following 2 exec commands to CLEAR and load the database 
+-- EXEC [Project2.5].[TruncatePrestigeCarsDatabase] @UserAuthorizationKey = 1;
+-- EXEC [Project2.5].[LoadPrestigeCarsDatabase]  @UserAuthorizationKey = 1;
+
+-- run the following to show the workflow steps table 
+-- EXEC [Process].[usp_ShowWorkflowSteps]
